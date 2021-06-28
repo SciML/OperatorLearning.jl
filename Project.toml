@@ -1,13 +1,9 @@
 name = "NeuralOperator"
-uuid = "f9680565-e15f-4ce9-86d7-50b3db4eae0b"
-authors = ["Patrick Zimbrod <76100656+pzimbrod@users.noreply.github.com> and contributors"]
+uuid = "5913d0e6-5bb6-45e3-8a06-341cf4fd0203"
+authors = ["Patrick Zimbrod <76100656+pzimbrod@users.noreply.github.com>"]
 version = "0.1.0"
 
-[compat]
-julia = "1.6"
-
-[extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test"]
+[deps]
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+PkgTemplates = "14b8a8f1-9102-5b29-a752-f990bacb7fe1"
