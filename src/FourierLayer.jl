@@ -32,7 +32,7 @@ end
 function FourierLayer(in::Integer, out::Integer, σ = identity;
                     init = Flux.glorot_uniform, bias_linear=true, bias_fourier=true)
     
-    Wf = init(floor(Int, in / 2)+1, floor(Int, in / 2)+1)
+    Wf = init(floor(Int, out / 2)+1, floor(Int, in / 2)+1)
     Wl = init(out, in)
 
     bf = bias_linear
@@ -50,7 +50,7 @@ function (a::FourierLayer)(x::AbstractVecOrMat)
     # The linear path
     linear = Wl * x .+ bl
     # The convolution path
-    fourier = irfft((Wf * rfft(x) .+ bf), length(x))
+    fourier = irfft((Wf * rfft(x) .+ bf), length(Wl[:,1]))
     # Return the activated sum
     return σ.(linear + fourier)
 end
