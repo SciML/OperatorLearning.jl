@@ -4,6 +4,7 @@
 A `Julia` implementation of the Fourier Neural Operator conceived by [Zongyi et al.](https://arxiv.org/abs/2010.08895) 
 using [Flux.jl](https://github.com/FluxML/Flux.jl) and [FFTW.jl](https://github.com/JuliaMath/FFTW.jl).
 
+The implementation of the layers is influenced heavily by the basic layers provided in the [Flux.jl](https://github.com/FluxML/Flux.jl) package.
 
 ## Installation
 
