@@ -35,8 +35,8 @@ function FourierLayer(in::Integer, out::Integer, σ = identity;
     Wf = init(floor(Int, out / 2)+1, floor(Int, in / 2)+1)
     Wl = init(out, in)
 
-    bf = bias_linear
-    bl = bias_fourier
+    bf = bias_fourier
+    bl = bias_linear
 
     return FourierLayer(Wf, Wl, bf, bl, σ)
 end
