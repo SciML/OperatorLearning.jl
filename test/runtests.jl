@@ -1,6 +1,9 @@
 using NeuralOperator
 using Test
+using Random
 
-@testset "NeuralOperator.jl" begin
-    # Write your tests here.
+Random.seed!(0)
+
+@testset "FourierLayer" begin
+    include("fourierlayer.jl")
 end
