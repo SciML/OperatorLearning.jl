@@ -21,7 +21,7 @@ struct FourierLayer{F, Mf<:AbstractMatrix, Ml<:AbstractMatrix, Bf, Bl}
     bias_l::Bl
     σ::F
     # Constructor for the entire fourier layer
-    function FourierLayer(Wf::Mf, Wl::Ml, bias_l = true, bias_f = true, σ::F = identity) where {Mf<:AbstractMatrix, Ml<:AbstractMatrix, F}
+    function FourierLayer(Wf::Mf, Wl::Ml, bias_f = true, bias_l = true, σ::F = identity) where {Mf<:AbstractMatrix, Ml<:AbstractMatrix, F}
         bf = Flux.create_bias(Wf, bias_f, size(Wf,1))
         bl = Flux.create_bias(Wl, bias_l, size(Wl, 1))
         new{F,Mf,Ml,typeof(bf),typeof(bl)}(Wf, Wl, bf, bl, σ)
@@ -30,7 +30,7 @@ end
 
 # Declare the function that assigns Weights and biases to the layer
 function FourierLayer(in::Integer, out::Integer, σ = identity;
-                    init = Flux.glorot_uniform, bias_linear=true, bias_fourier=true)
+                    init = Flux.glorot_uniform, bias_fourier=true, bias_linear=true)
     
     Wf = init(floor(Int, out / 2)+1, floor(Int, in / 2)+1)
     Wl = init(out, in)
