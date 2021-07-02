@@ -30,10 +30,10 @@ end
 
 # Declare the function that assigns Weights and biases to the layer
 function FourierLayer(in::Integer, out::Integer, σ = identity;
-                    init = Flux.glorot_uniform, bias_fourier=true, bias_linear=true)
+                    initf = cglorot_uniform, initl = Flux.glorot_uniform, bias_fourier=true, bias_linear=true)
     
-    Wf = init(floor(Int, out / 2)+1, floor(Int, in / 2)+1)
-    Wl = init(out, in)
+    Wf = initf(floor(Int, out / 2)+1, floor(Int, in / 2)+1)
+    Wl = initl(out, in)
 
     bf = bias_fourier
     bl = bias_linear
