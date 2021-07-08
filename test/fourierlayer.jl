@@ -1,5 +1,4 @@
-using Test, Random
-import Flux: activations
+using Test, Random, Flux
 
 @testset "FourierLayer" begin
     # Test the proper construction

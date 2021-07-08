@@ -1,6 +1,6 @@
 """
-FourierLayer(in, out, σ=identity, init=glorot_uniform)
-FourierLayer(W::AbstractMatrix, [bias, σ])
+FourierLayer(in, out, batch, grid, modes, σ=identity, init=glorot_uniform)
+FourierLayer(Wf::AbstractArray, Wl::AbstractArray, [bias_f, bias_l, σ])
 
 Create a Layer of the Fourier Neural Operator as proposed by Zongyi et al.
 arXiv: 2010.08895
@@ -11,12 +11,10 @@ specified output dimension such that M x In x N -> M x Out x N.
 The output though only contains the relevant Fourier modes with the rest padded to zero
 in the last axis as a result of the filtering.
 
-The input `x` should be a 3D tensor of length `in` (number of grid points), 
-width of the number of parameters considered plus the sparial coordinates and depth
-of the number of training samples.
-The out `y` will be a 3D tensor of length `out` (number of grid points), 
-width of the number of solutions plus one spatial coordinate and depth of the
-number of training samples.
+The input `x` should be a 3D tensor of shape
+(batch size (`batch`) x num parameters (`in`) x num grid points (`grid`))
+The output `y` will be a 3D tensor of shape
+(batch size (`batch`) x `out` x num grid points (`grid`))
 
 You can specify biases for the paths as you like, though the convolutional path is
 originally not intended to perform an affine transformation.
@@ -25,9 +23,9 @@ originally not intended to perform an affine transformation.
 Say you're considering a 1D diffusion problem on a 64 point grid. The input is comprised
 of the grid points as well as the IC at this point.
 The data consists of 200 instances of the solution.
-So the input takes the dimension `64 x 2 x 200`.
+So the input takes the dimension `200 x 2 x 64`.
 The output would be the diffused variable at a later time, which makes the output of the form
-`64 x 2 x 200` as well.
+`200 x 2 x 64` as well.
 """
 # Create the data structure
 struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf, Bl}
