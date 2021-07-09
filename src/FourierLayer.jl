@@ -73,7 +73,7 @@ function (a::FourierLayer)(x::AbstractArray)
     Wf, Wl, bf, bl, σ = a.weight_f, a.weight_l, a.bias_f, a.bias_l, a.σ
 
     # The linear path
-    @tullio linear[batchsize, dim_out, dim_grid] := Wl[batchsize, dim_out, dim_in] *
+    @ein linear[batchsize, dim_out, dim_grid] := Wl[batchsize, dim_out, dim_in] *
                             x[batchsize, dim_in, dim_grid]
 
     # The convolution path
@@ -81,7 +81,7 @@ function (a::FourierLayer)(x::AbstractArray)
     ft = rfft(x,3)
 
     # Multiply the weight matrix with the input using the Einstein convention
-    @tullio 𝔉[batchsize, dim_out, dim_grid] := Wf[dim_in, dim_out, dim_grid] *
+    @ein 𝔉[batchsize, dim_out, dim_grid] := Wf[dim_in, dim_out, dim_grid] *
                 ft[batchsize, dim_in, dim_grid] 
     # Do the inverse transform (WIP)
     fourier = irfft(𝔉, size(x,3), 3)

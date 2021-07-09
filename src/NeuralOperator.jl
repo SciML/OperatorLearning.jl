@@ -7,7 +7,7 @@ using FFTW
 using Random
 using Random: AbstractRNG
 using Flux: nfan, glorot_uniform, batch
-using Tullio
+using OMEinsum
 
 export FourierLayer
 
