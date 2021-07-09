@@ -1,6 +1,5 @@
 module NeuralOperator
 
-using Tullio: zeros
 using Base: Integer, ident_cmp
 using Flux
 using FFTW
