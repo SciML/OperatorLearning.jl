@@ -27,7 +27,6 @@ So the input takes the dimension `200 x 2 x 64`.
 The output would be the diffused variable at a later time, which makes the output of the form
 `200 x 2 x 64` as well.
 """
-# Create the data structure
 struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf, Bl, Modes}
     weight_f::Mf
     weight_l::Ml
