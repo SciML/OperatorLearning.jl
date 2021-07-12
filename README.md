@@ -2,7 +2,7 @@
 # NeuralOperator.jl
 
 A `Julia` implementation of the Fourier Neural Operator conceived by [Zongyi et al.](https://arxiv.org/abs/2010.08895) 
-using [Flux.jl](https://github.com/FluxML/Flux.jl) and [FFTW.jl](https://github.com/JuliaMath/FFTW.jl).
+using (mainly) [Flux.jl](https://github.com/FluxML/Flux.jl) and [FFTW.jl](https://github.com/JuliaMath/FFTW.jl).
 
 I decided to implement this method in Julia because coding up a layer using PyTorch in Python is rather cumbersome in comparison and Julia as a whole simply runs at comparable or faster speed than Python. Please do check out the [original work](https://github.com/zongyi-li/fourier_neural_operator) at GitHub as well.
 
@@ -18,25 +18,23 @@ pkg> add https://github.com/pzimbrod/NeuralOperator.jl
 
 ## Usage/Examples
 
-Usage is basically identical to Flux. When calling `FourierLayer`, a linear and a convolution path is constructed. The activation function acts on the sum of both paths and not on each individually.
-For now, the convolution path does not filter modes, but does a full linear transform in Fourier space. You can make this an affine transformation by specifying a nonzero bias.
+The basic workflow is more or less in line with the layer architectures that `Flux` provides, i.e. you construct individual layers, chain them if desired and pass the inputs as arguments to the layers.
+
+The Fourier Layer performs a linear transform as well as convolution (linear transform in fourier space), adds them and passes it through the activation.
+Additionally, higher Fourier modes are filtered out in the convolution path where you can specify the amount of modes to be kept.
+
+The syntax for a single Fourier Layer is:
 
 ```julia
 using NeuralOperator
+using Flux
 
-# Some input
-t = [0:0.1:10;]
-x = sin.(t) + atan.(t)
+# Input = 101, Output = 101, Batch size = 200, Grid points = 100, Fourier modes = 16
+# Activation: sigmoid (you need to import Flux in your Script to access the activations)
+model = FourierLayer(101, 101, 200, 100, 16, σ)
 
-# Create a matching Fourier Layer
-model = FourierLayer(101, 101)
-
-# Do some calcs
-res = model(x)
-
-# Perform strict convolution in Fourier Space
-model = FourierLayer(101, 101; bias_fourier=false)
-
+# Same as above, but perform strict convolution in Fourier Space
+model = FourierLayer(101, 101, 200, 100, 16, σ; bias_fourier=false)
 ```
 
 ## License
