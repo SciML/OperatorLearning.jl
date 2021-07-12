@@ -28,17 +28,18 @@ The output would be the diffused variable at a later time, which makes the outpu
 `200 x 2 x 64` as well.
 """
 # Create the data structure
-struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf, Bl}
+struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf, Bl, Modes}
     weight_f::Mf
     weight_l::Ml
     bias_f::Bf
     bias_l::Bl
     σ::F
+    λ::Modes
     # Constructor for the entire fourier layer
-    function FourierLayer(Wf::Mf, Wl::Ml, bias_f = true, bias_l = true, σ::F = identity) where {Mf<:AbstractArray, Ml<:AbstractArray, F}
+    function FourierLayer(Wf::Mf, Wl::Ml, bias_f = true, bias_l = true, σ::F = identity, λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray, F, Modes}
         bf = Flux.create_bias(Wf, bias_f, size(Wf,1))
         bl = Flux.create_bias(Wl, bias_l, size(Wl, 1))
-        new{F,Mf,Ml,typeof(bf),typeof(bl)}(Wf, Wl, bf, bl, σ)
+        new{F,Mf,Ml,typeof(bf),typeof(bl),Modes}(Wf, Wl, bf, bl, σ, λ)
     end
 end
 
@@ -46,7 +47,7 @@ end
 # `in` and `out` refer to the dimensionality of the number of parameters
 # `modes` specifies the number of modes not to be filtered out
 # `grid` specifies the number of grid points in the data
-function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, modes::Integer,
+function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, modes = 12,
                         σ = identity; initf = cglorot_uniform, initl = Flux.glorot_uniform, bias_fourier=true, bias_linear=true)
 
     # Initialize Fourier weight matrix (only with relevant modes)
@@ -62,7 +63,9 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     bf = bias_fourier
     bl = bias_linear
 
-    return FourierLayer(Wf, Wl, bf, bl, σ)
+    λ = modes
+
+    return FourierLayer(Wf, Wl, bf, bl, σ, λ)
 end
 
 Flux.@functor FourierLayer
@@ -98,7 +101,10 @@ function Base.show(io::IO, l::FourierLayer)
     print(io, "FourierLayer with\nConvolution path: (", size(l.weight_f, 2), ", ",
             size(l.weight_f, 1), ", ", size(l.weight_f, 3))
     print(io, ")\n")
-    print(io, "Linear path: (", size(l.weight_l, 2), ", ", size(l.weight_l, 1))
+    print(io, "Linear path: (", size(l.weight_l, 2), ", ", size(l.weight_l, 1), ", ",
+            size(l.weight_l, 3))
     print(io, ")\n")
+    print(io, "Fourier modes: ", l.λ)
+    print(io, "\n")
     l.σ == identity || print(io, "Activation: ", l.σ)
 end
