@@ -15,5 +15,6 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 [compat]
 FFTW = "1"
 Flux = "0.12"
+OMEinsum = "0.4"
 PkgTemplates = "0.7"
 Revise = "3"
