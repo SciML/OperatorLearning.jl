@@ -27,18 +27,22 @@ So the input takes the dimension `200 x 2 x 64`.
 The output would be the diffused variable at a later time, which makes the output of the form
 `200 x 2 x 64` as well.
 """
-struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf, Bl, Modes}
+struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf, Bl, Modes<:Int, Grid<:Int}
     weight_f::Mf
     weight_l::Ml
     bias_f::Bf
     bias_l::Bl
     σ::F
     λ::Modes
+    Ω::Grid
     # Constructor for the entire fourier layer
-    function FourierLayer(Wf::Mf, Wl::Ml, bias_f = true, bias_l = true, σ::F = identity, λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray, F, Modes}
-        bf = Flux.create_bias(Wf, bias_f, size(Wf,1))
-        bl = Flux.create_bias(Wl, bias_l, size(Wl, 1))
-        new{F,Mf,Ml,typeof(bf),typeof(bl),Modes}(Wf, Wl, bf, bl, σ, λ)
+    function FourierLayer(Wf::Mf, Wl::Ml, Ω::Grid, bias_f = true, bias_l = true, 
+        σ::F = identity, λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
+        F, Modes<:Int, Grid<:Int}
+        # Biases need to be of shape [batch, out, grid]
+        bf = Flux.create_bias(Wf, bias_f, size(Wl,1), size(Wf,2), Ω)
+        bl = Flux.create_bias(Wl, bias_l, size(Wl, 1), size(Wl,2), Ω)
+        new{F,Mf,Ml,typeof(bf),typeof(bl),Modes,Grid}(Wf, Wl, bf, bl, σ, λ, Ω)
     end
 end
 
@@ -47,12 +51,14 @@ end
 # `modes` specifies the number of modes not to be filtered out
 # `grid` specifies the number of grid points in the data
 function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, modes = 12,
-                        σ = identity; initf = cglorot_uniform, initl = Flux.glorot_uniform, bias_fourier=true, bias_linear=true)
+                        σ = identity; initf = cglorot_uniform, initl = Flux.glorot_uniform,
+                        bias_fourier=true, bias_linear=true)
 
     # Initialize Fourier weight matrix (only with relevant modes)
     Wf = initf(in, out, modes)
     # Make sure filtering works
-    @assert modes <= grid/2 + 1 "Specified modes exceed allowed maximum. The number of modes to filter must be smaller than N/2 + 1"
+    @assert modes <= grid/2 + 1 "Specified modes exceed allowed maximum. 
+    The number of modes to filter must be smaller than N/2 + 1"
     # Pad the fourier weight matrix with additional zeros
     Wf = cat(Wf, zeros(size(Wf,1), size(Wf,2), floor(Int, grid/2 + 1) - modes); dims=3)
 
@@ -63,8 +69,9 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     bl = bias_linear
 
     λ = modes
+    Ω = grid
 
-    return FourierLayer(Wf, Wl, bf, bl, σ, λ)
+    return FourierLayer(Wf, Wl, Ω, bf, bl, σ, λ)
 end
 
 Flux.@functor FourierLayer
@@ -77,6 +84,7 @@ function (a::FourierLayer)(x::AbstractArray)
     # The linear path
     @ein linear[batchsize, dim_out, dim_grid] := Wl[batchsize, dim_out, dim_in] *
                             x[batchsize, dim_in, dim_grid]
+    #linear += bl
 
     # The convolution path
     # Do the Fourier transform (FFT) along the last axis of the input
@@ -84,8 +92,9 @@ function (a::FourierLayer)(x::AbstractArray)
 
     # Multiply the weight matrix with the input using the Einstein convention
     @ein 𝔉[batchsize, dim_out, dim_grid] := Wf[dim_in, dim_out, dim_grid] *
-                ft[batchsize, dim_in, dim_grid] 
-    # Do the inverse transform (WIP)
+                ft[batchsize, dim_in, dim_grid]
+    #𝔉 += bf
+    # Do the inverse transform
     fourier = irfft(𝔉, size(x,3), 3)
 
     # Return the activated sum
