@@ -40,7 +40,7 @@ struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf, Bl, Modes<:Int,
         σ::F = identity, λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
         F, Modes<:Int, Grid<:Int}
         # Biases need to be of shape [batch, out, grid]
-        bf = Flux.create_bias(Wf, bias_f, size(Wl,1), size(Wf,2), Ω)
+        bf = Flux.create_bias(Wf, bias_f, size(Wl,1), size(Wf,2), floor(Int, Ω/2 + 1))
         bl = Flux.create_bias(Wl, bias_l, size(Wl, 1), size(Wl,2), Ω)
         new{F,Mf,Ml,typeof(bf),typeof(bl),Modes,Grid}(Wf, Wl, bf, bl, σ, λ, Ω)
     end
@@ -57,10 +57,10 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     # Initialize Fourier weight matrix (only with relevant modes)
     Wf = initf(in, out, modes)
     # Make sure filtering works
-    @assert modes <= grid/2 + 1 "Specified modes exceed allowed maximum. 
+    @assert modes <= floor(Int, grid/2 + 1) "Specified modes exceed allowed maximum. 
     The number of modes to filter must be smaller than N/2 + 1"
     # Pad the fourier weight matrix with additional zeros
-    Wf = cat(Wf, zeros(size(Wf,1), size(Wf,2), floor(Int, grid/2 + 1) - modes); dims=3)
+    Wf = cat(Wf, zeros(Float32, size(Wf,1), size(Wf,2), floor(Int, grid/2 + 1) - modes); dims=3)
 
     # Initialize Linear weight matrix
     Wl = initl(batch, out, in)
@@ -84,7 +84,7 @@ function (a::FourierLayer)(x::AbstractArray)
     # The linear path
     @ein linear[batchsize, dim_out, dim_grid] := Wl[batchsize, dim_out, dim_in] *
                             x[batchsize, dim_in, dim_grid]
-    #linear += bl
+    linear += bl
 
     # The convolution path
     # Do the Fourier transform (FFT) along the last axis of the input
@@ -93,7 +93,7 @@ function (a::FourierLayer)(x::AbstractArray)
     # Multiply the weight matrix with the input using the Einstein convention
     @ein 𝔉[batchsize, dim_out, dim_grid] := Wf[dim_in, dim_out, dim_grid] *
                 ft[batchsize, dim_in, dim_grid]
-    #𝔉 += bf
+    𝔉 += bf
     # Do the inverse transform
     fourier = irfft(𝔉, size(x,3), 3)
 
