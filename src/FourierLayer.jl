@@ -27,14 +27,14 @@ So the input takes the dimension `200 x 2 x 64`.
 The output would be the diffused variable at a later time, which makes the output of the form
 `200 x 2 x 64` as well.
 """
-struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf, Bl, Modes<:Int, Grid<:Int}
+struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Grid<:Int, Bf, Bl, Modes<:Int}
     weight_f::Mf
     weight_l::Ml
+    Ω::Grid
     bias_f::Bf
     bias_l::Bl
     σ::F
     λ::Modes
-    Ω::Grid
     # Constructor for the entire fourier layer
     function FourierLayer(Wf::Mf, Wl::Ml, Ω::Grid, bias_f = true, bias_l = true, 
         σ::F = identity, λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
@@ -42,7 +42,7 @@ struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf, Bl, Modes<:Int,
         # Biases need to be of shape [batch, out, grid]
         bf = Flux.create_bias(Wf, bias_f, size(Wl,1), size(Wf,2), floor(Int, Ω/2 + 1))
         bl = Flux.create_bias(Wl, bias_l, size(Wl, 1), size(Wl,2), Ω)
-        new{F,Mf,Ml,typeof(bf),typeof(bl),Modes,Grid}(Wf, Wl, bf, bl, σ, λ, Ω)
+        new{F,Mf,Ml,Grid,typeof(bf),typeof(bl),Modes}(Wf, Wl, Ω, bf, bl, σ, λ)
     end
 end
 
