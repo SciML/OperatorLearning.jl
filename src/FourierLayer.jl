@@ -27,22 +27,19 @@ So the input takes the dimension `2 x 200 x 64`.
 The output would be the diffused variable at a later time, which makes the output of the form
 `2 x 200 x 64` as well.
 """
-struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Grid<:Int, Bf, Bl, Modes<:Int}
+struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, 
+                    Bf<:AbstractArray, Bl<:AbstractArray, Modes<:Int}
     weight_f::Mf
     weight_l::Ml
-    Ω::Grid
     bias_f::Bf
     bias_l::Bl
     σ::F
     λ::Modes
     # Constructor for the entire fourier layer
-    function FourierLayer(Wf::Mf, Wl::Ml, Ω::Grid, bias_f = true, bias_l = true, 
-        σ::F = identity, λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
-        F, Modes<:Int, Grid<:Int}
-        # Biases need to be of shape [batch, out, grid]
-        bf = Flux.create_bias(Wf, bias_f, size(Wf,2), size(Wl,2), floor(Int, Ω/2 + 1))
-        bl = Flux.create_bias(Wl, bias_l, size(Wl, 1), size(Wl,2), Ω)
-        new{F,Mf,Ml,Grid,typeof(bf),typeof(bl),Modes}(Wf, Wl, Ω, bf, bl, σ, λ)
+    function FourierLayer(Wf::Mf, Wl::Ml, bf::Bf, bl::Bl, σ::F = identity,
+        λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
+        Bf<:AbstractArray, Bl<:AbstractArray, F, Modes<:Int}
+        new{F,Mf,Ml,Bf,Bl,Modes}(Wf, Wl, bf, bl, σ, λ)
     end
 end
 
@@ -63,15 +60,14 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     Wf = cat(Wf, zeros(Float32, size(Wf,1), size(Wf,2), floor(Int, grid/2 + 1) - modes); dims=3)
 
     # Initialize Linear weight matrix
-    Wl = initl(out,batch, in)
+    Wl = initl(out, in)
 
-    bf = bias_fourier
-    bl = bias_linear
+    bf = Flux.create_bias(Wf, bias_fourier, out, batch, floor(Int, grid/2 + 1))
+    bl = Flux.create_bias(Wl, bias_linear, out, batch, grid)
 
     λ = modes
-    Ω = grid
 
-    return FourierLayer(Wf, Wl, Ω, bf, bl, σ, λ)
+    return FourierLayer(Wf, Wl, bf, bl, σ, λ)
 end
 
 Flux.@functor FourierLayer
@@ -82,7 +78,7 @@ function (a::FourierLayer)(x::AbstractArray)
     Wf, Wl, bf, bl, σ = a.weight_f, a.weight_l, a.bias_f, a.bias_l, a.σ
 
     # The linear path
-    @ein linear[dim_out, batchsize, dim_grid] := Wl[dim_out, batchsize, dim_in] *
+    @ein linear[dim_out, batchsize, dim_grid] := Wl[dim_out, dim_in] *
                             x[dim_in, batchsize, dim_grid]
     linear += bl
 
