@@ -7,14 +7,14 @@ arXiv: 2010.08895
 
 The layer does a fourier transform on the last axis (the coeffs) of the input array,
 filters higher modes out by the weight matrix and transforms the second axis to the
-specified output dimension such that M x In x N -> M x Out x N.
+specified output dimension such that In x M x N -> Out x M x N.
 The output though only contains the relevant Fourier modes with the rest padded to zero
 in the last axis as a result of the filtering.
 
 The input `x` should be a 3D tensor of shape
-(batch size (`batch`) x num parameters (`in`) x num grid points (`grid`))
+(num parameters (`in`) x batch size (`batch`) x num grid points (`grid`))
 The output `y` will be a 3D tensor of shape
-(batch size (`batch`) x `out` x num grid points (`grid`))
+(`out` x batch size (`batch`) x num grid points (`grid`))
 
 You can specify biases for the paths as you like, though the convolutional path is
 originally not intended to perform an affine transformation.
@@ -23,9 +23,9 @@ originally not intended to perform an affine transformation.
 Say you're considering a 1D diffusion problem on a 64 point grid. The input is comprised
 of the grid points as well as the IC at this point.
 The data consists of 200 instances of the solution.
-So the input takes the dimension `200 x 2 x 64`.
+So the input takes the dimension `2 x 200 x 64`.
 The output would be the diffused variable at a later time, which makes the output of the form
-`200 x 2 x 64` as well.
+`2 x 200 x 64` as well.
 """
 struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Grid<:Int, Bf, Bl, Modes<:Int}
     weight_f::Mf
@@ -40,7 +40,7 @@ struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Grid<:Int, Bf, Bl, 
         σ::F = identity, λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
         F, Modes<:Int, Grid<:Int}
         # Biases need to be of shape [batch, out, grid]
-        bf = Flux.create_bias(Wf, bias_f, size(Wl,1), size(Wf,2), floor(Int, Ω/2 + 1))
+        bf = Flux.create_bias(Wf, bias_f, size(Wf,2), size(Wl,2), floor(Int, Ω/2 + 1))
         bl = Flux.create_bias(Wl, bias_l, size(Wl, 1), size(Wl,2), Ω)
         new{F,Mf,Ml,Grid,typeof(bf),typeof(bl),Modes}(Wf, Wl, Ω, bf, bl, σ, λ)
     end
@@ -63,7 +63,7 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     Wf = cat(Wf, zeros(Float32, size(Wf,1), size(Wf,2), floor(Int, grid/2 + 1) - modes); dims=3)
 
     # Initialize Linear weight matrix
-    Wl = initl(batch, out, in)
+    Wl = initl(out,batch, in)
 
     bf = bias_fourier
     bl = bias_linear
@@ -82,8 +82,8 @@ function (a::FourierLayer)(x::AbstractArray)
     Wf, Wl, bf, bl, σ = a.weight_f, a.weight_l, a.bias_f, a.bias_l, a.σ
 
     # The linear path
-    @ein linear[batchsize, dim_out, dim_grid] := Wl[batchsize, dim_out, dim_in] *
-                            x[batchsize, dim_in, dim_grid]
+    @ein linear[dim_out, batchsize, dim_grid] := Wl[dim_out, batchsize, dim_in] *
+                            x[dim_in, batchsize, dim_grid]
     linear += bl
 
     # The convolution path
@@ -91,8 +91,8 @@ function (a::FourierLayer)(x::AbstractArray)
     ft = rfft(x,3)
 
     # Multiply the weight matrix with the input using the Einstein convention
-    @ein 𝔉[batchsize, dim_out, dim_grid] := Wf[dim_in, dim_out, dim_grid] *
-                ft[batchsize, dim_in, dim_grid]
+    @ein 𝔉[dim_out, batchsize, dim_grid] := Wf[dim_in, dim_out, dim_grid] *
+                ft[dim_in, batchsize, dim_grid]
     𝔉 += bf
     # Do the inverse transform
     fourier = irfft(𝔉, size(x,3), 3)
