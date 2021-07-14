@@ -27,19 +27,23 @@ So the input takes the dimension `2 x 200 x 64`.
 The output would be the diffused variable at a later time, which makes the output of the form
 `2 x 200 x 64` as well.
 """
-struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, 
-                    Bf<:AbstractArray, Bl<:AbstractArray, Modes<:Int}
+struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf<:AbstractArray,
+                Bl<:AbstractArray, fplan<:FFTW.rFFTWPlan, ifplan<:AbstractFFTs.ScaledPlan,
+                Modes<:Int}
     weight_f::Mf
     weight_l::Ml
     bias_f::Bf
     bias_l::Bl
+    𝔉::fplan
+    i𝔉::ifplan
     σ::F
     λ::Modes
     # Constructor for the entire fourier layer
-    function FourierLayer(Wf::Mf, Wl::Ml, bf::Bf, bl::Bl, σ::F = identity,
-        λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
-        Bf<:AbstractArray, Bl<:AbstractArray, F, Modes<:Int}
-        new{F,Mf,Ml,Bf,Bl,Modes}(Wf, Wl, bf, bl, σ, λ)
+    function FourierLayer(Wf::Mf, Wl::Ml, bf::Bf, bl::Bl, 𝔉::fplan, i𝔉::ifplan,
+        σ::F = identity, λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
+        Bf<:AbstractArray, Bl<:AbstractArray, fplan<:FFTW.rFFTWPlan,
+        ifplan<:AbstractFFTs.ScaledPlan, F, Modes<:Int}
+        new{F,Mf,Ml,Bf,Bl,fplan,ifplan,Modes}(Wf, Wl, bf, bl, 𝔉, i𝔉, σ, λ)
     end
 end
 
@@ -65,9 +69,15 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     bf = Flux.create_bias(Wf, bias_fourier, out, batch, floor(Int, grid/2 + 1))
     bl = Flux.create_bias(Wl, bias_linear, out, batch, grid)
 
+    # Pass the modes for output
     λ = modes
 
-    return FourierLayer(Wf, Wl, bf, bl, σ, λ)
+    # We create linear operators for the FFT and IFFT for efficiency
+    # So that it has to be only pre-allocated once
+    𝔉 = plan_rfft(Array{Float32,3}(undef,in,batch,grid))
+    i𝔉 = plan_irfft(Array{ComplexF32,3}(undef,out,batch,floor(Int, grid/2 + 1)), grid, 3)
+
+    return FourierLayer(Wf, Wl, bf, bl, 𝔉, i𝔉, σ, λ)
 end
 
 Flux.@functor FourierLayer
