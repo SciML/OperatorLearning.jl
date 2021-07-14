@@ -3,7 +3,7 @@ using Test, Random, Flux
 @testset "FourierLayer" begin
     # Test the proper construction
     @test size(FourierLayer(128, 64, 200, 100, 20).weight_f) == (128, 64, 51)
-    @test size(FourierLayer(128, 64, 200, 100, 20).weight_l) == (200, 64, 128)
+    @test size(FourierLayer(128, 64, 200, 100, 20).weight_l) == (64, 200, 128)
     #@test size(FourierLayer(10, 100).bias_f) == (51,)
     #@test size(FourierLayer(10, 100).bias_l) == (100,)
 
