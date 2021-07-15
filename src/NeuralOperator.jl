@@ -1,6 +1,7 @@
 module NeuralOperator
 
-using Base: Integer, ident_cmp
+using Base: Integer, ident_cmp, Float32
+using CUDA
 using Flux
 using FFTW
 using Random

@@ -28,7 +28,7 @@ The output would be the diffused variable at a later time, which makes the outpu
 `2 x 200 x 64` as well.
 """
 struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf<:AbstractArray,
-                Bl<:AbstractArray, fplan<:FFTW.rFFTWPlan, ifplan<:AbstractFFTs.ScaledPlan,
+                Bl<:AbstractArray, fplan, ifplan,
                 Modes<:Int}
     weight_f::Mf
     weight_l::Ml
@@ -41,8 +41,8 @@ struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf<:AbstractArray,
     # Constructor for the entire fourier layer
     function FourierLayer(Wf::Mf, Wl::Ml, bf::Bf, bl::Bl, 𝔉::fplan, i𝔉::ifplan,
         σ::F = identity, λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
-        Bf<:AbstractArray, Bl<:AbstractArray, fplan<:FFTW.rFFTWPlan,
-        ifplan<:AbstractFFTs.ScaledPlan, F, Modes<:Int}
+        Bf<:AbstractArray, Bl<:AbstractArray, fplan,
+        ifplan, F, Modes<:Int}
         new{F,Mf,Ml,Bf,Bl,fplan,ifplan,Modes}(Wf, Wl, bf, bl, 𝔉, i𝔉, σ, λ)
     end
 end
@@ -72,10 +72,18 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     # Pass the modes for output
     λ = modes
 
-    # We create linear operators for the FFT and IFFT for efficiency
+    # Create linear operators for the FFT and IFFT for efficiency
     # So that it has to be only pre-allocated once
-    𝔉 = plan_rfft(Array{Float32,3}(undef,in,batch,grid))
-    i𝔉 = plan_irfft(Array{ComplexF32,3}(undef,out,batch,floor(Int, grid/2 + 1)), grid, 3)
+    # First, an ugly workaround: FFTW.jl passes keywords that cuFFT complains about when the
+    # constructor is wrapped with |> gpu. Instead, you have to pass a CuArray as input to plan_rfft
+    # Ugh.
+    template𝔉 = Flux.use_cuda[] ? CuArray{Float32}(undef,in,batch,grid) :
+                    Array{Float32}(undef,in,batch,grid)
+    templatei𝔉 = Flux.use_cuda[] ? CuArray{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1)) :
+                    Array{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1))
+
+    𝔉 = plan_rfft(template𝔉,3)
+    i𝔉 = plan_irfft(templatei𝔉,grid, 3)
 
     return FourierLayer(Wf, Wl, bf, bl, 𝔉, i𝔉, σ, λ)
 end
@@ -85,23 +93,25 @@ Flux.@functor FourierLayer
 # The actual layer that does stuff
 function (a::FourierLayer)(x::AbstractArray)
     # Assign the parameters
-    Wf, Wl, bf, bl, σ = a.weight_f, a.weight_l, a.bias_f, a.bias_l, a.σ
+    Wf, Wl, bf, bl, σ, 𝔉, i𝔉 = a.weight_f, a.weight_l, a.bias_f, a.bias_l, a.σ, a.𝔉, a.i𝔉
 
     # The linear path
+    # x -> Wl
     @ein linear[dim_out, batchsize, dim_grid] := Wl[dim_out, dim_in] *
                             x[dim_in, batchsize, dim_grid]
     linear += bl
 
     # The convolution path
+    # x -> 𝔉 -> Wf -> i𝔉
     # Do the Fourier transform (FFT) along the last axis of the input
-    ft = rfft(x,3)
+    fourier = 𝔉 * x
 
     # Multiply the weight matrix with the input using the Einstein convention
-    @ein 𝔉[dim_out, batchsize, dim_grid] := Wf[dim_in, dim_out, dim_grid] *
-                ft[dim_in, batchsize, dim_grid]
-    𝔉 += bf
+    @ein fourier[dim_out, batchsize, dim_grid] := Wf[dim_in, dim_out, dim_grid] *
+                fourier[dim_in, batchsize, dim_grid]
+    fourier += bf
     # Do the inverse transform
-    fourier = irfft(𝔉, size(x,3), 3)
+    fourier = i𝔉 * fourier
 
     # Return the activated sum
     return σ.(linear + fourier)
