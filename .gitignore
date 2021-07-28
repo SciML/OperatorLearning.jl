@@ -4,3 +4,6 @@
 /Manifest.toml
 .vscode/
 benchmarks/Manifest.toml
+
+# No test files
+*.mat
