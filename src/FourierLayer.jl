@@ -61,7 +61,7 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     @assert modes <= floor(Int, grid/2 + 1) "Specified modes exceed allowed maximum. 
     The number of modes to filter must be smaller than N/2 + 1"
     # Pad the fourier weight matrix with additional zeros
-    Wf = cat(Wf, zeros(Float32, size(Wf,1), size(Wf,2), floor(Int, grid/2 + 1) - modes); dims=3)
+    Wf = pad_zeros(Wf, (0, floor(Int, grid/2 + 1) - modes), dims=3)
 
     # Initialize Linear weight matrix
     Wl = initl(out, in)
