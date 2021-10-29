@@ -77,10 +77,10 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     # First, an ugly workaround: FFTW.jl passes keywords that cuFFT complains about when the
     # constructor is wrapped with |> gpu. Instead, you have to pass a CuArray as input to plan_rfft
     # Ugh.
-    template𝔉 = Flux.use_cuda[] ? CuArray{Float32}(undef,in,batch,grid) :
-                    Array{Float32}(undef,in,batch,grid)
-    templatei𝔉 = Flux.use_cuda[] ? CuArray{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1)) :
-                    Array{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1))
+    template𝔉 = Flux.use_cuda[] != Nothing ? Array{Float32}(undef,in,batch,grid) :
+                    CuArray{Float32}(undef,in,batch,grid)
+    templatei𝔉 = Flux.use_cuda[] != Nothing ? Array{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1)) :
+                    CuArray{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1))
 
     𝔉 = plan_rfft(template𝔉,3)
     i𝔉 = plan_irfft(templatei𝔉,grid, 3)
