@@ -98,9 +98,6 @@ function (a::FourierLayer)(x::AbstractArray)
     # The linear path
     # x -> Wl
     linear = Wl ⊠ x .+ bl
-    #@ein linear[dim_out, batchsize, dim_grid] := Wl[dim_out, dim_in] *
-    #                        x[dim_in, batchsize, dim_grid]
-    #linear += bl
 
     # The convolution path
     # x -> 𝔉 -> Wf -> i𝔉
@@ -109,9 +106,7 @@ function (a::FourierLayer)(x::AbstractArray)
 
     # Multiply the weight matrix with the input using the Einstein convention
     fourier = Wf ⊠ fourier .+ bf
-    #@ein fourier[dim_out, batchsize, dim_grid] := Wf[dim_in, dim_out, dim_grid] *
-    #            fourier[dim_in, batchsize, dim_grid]
-    #fourier += bf
+
     # Do the inverse transform
     fourier = i𝔉 * fourier
 
