@@ -66,8 +66,8 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     # Initialize Linear weight matrix
     Wl = initl(out, in)
 
-    bf = Flux.create_bias(Wf, bias_fourier, out, batch, floor(Int, grid/2 + 1))
-    bl = Flux.create_bias(Wl, bias_linear, out, batch, grid)
+    bf = Flux.create_bias(Wf, bias_fourier, out, 1, floor(Int, grid/2 + 1))
+    bl = Flux.create_bias(Wl, bias_linear, out, 1, grid)
 
     # Pass the modes for output
     λ = modes
