@@ -47,8 +47,8 @@ xtrain, xtest = permutedims(xtrain,(3,1,2)), permutedims(xtest,(3,1,2))
 ytrain, ytest = permutedims(ytrain,(3,1,2)), permutedims(ytest,(3,1,2))
 
 # Pass the data to the Flux DataLoader and give it a batch of 20
-train_loader = Flux.Data.DataLoader((data=xtrain, label=ytrain), batchsize=20)
-test_loader = Flux.Data.DataLoader((data=xtest, label=ytest), batchsize=20)
+train_loader = Flux.Data.DataLoader((xtrain, ytrain), batchsize=20)
+test_loader = Flux.Data.DataLoader((xtest, ytest), batchsize=20)
 
 # Set up the Fourier Layer
 # 128 in- and outputs, batch size 20 as given above, grid size 1024
