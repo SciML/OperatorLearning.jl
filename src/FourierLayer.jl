@@ -104,7 +104,7 @@ function (a::FourierLayer)(x::AbstractArray)
     # Do the Fourier transform (FFT) along the last axis of the input
     fourier = 𝔉 * x
 
-    # Multiply the weight matrix with the input using the Einstein convention
+    # Multiply the weight matrix with the input using batched multiplication
     fourier = Wf ⊠ fourier .+ bf
 
     # Do the inverse transform
