@@ -31,9 +31,9 @@ end
 # Methods for GPU Arrays, borrowed from CUDA.jl -> fft.jl #490
 function NNlib.batched_mul!(y::DenseCuArray{Ty}, p::CuFFTPlan{T,K,false}, x::DenseCuArray{T}
                            ) where {Ty,T,K}
-    assert_applicable(p,x,y)
+    CUFFT.assert_applicable(p, x[:,:,1], y[:,:,1])
     @inbounds for k ∈ 1:size(y,3)
-        @views unsafe_execute!(p, x[:,:,k] ,y[:,:,k])
+        @views CUFFT.unsafe_execute!(p, x[:,:,k] ,y[:,:,k])
     end
     return y
 end
