@@ -10,7 +10,6 @@ using Random: AbstractRNG
 using Flux: nfan, glorot_uniform, batch
 
 export FourierLayer
-export batched_mul!
 
 include("FourierLayer.jl")
 include("ComplexWeights.jl")
