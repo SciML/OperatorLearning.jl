@@ -28,7 +28,7 @@ The output would be the diffused variable at a later time, which makes the outpu
 `2 x 200 x 64` as well.
 """
 struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf<:AbstractArray,
-                Bl<:AbstractArray, fplan, ifplan,
+                Bl<:AbstractArray, fplan<:AbstractArray, ifplan<:AbstractArray,
                 Modes<:Int}
     weight_f::Mf
     weight_l::Ml
@@ -36,14 +36,15 @@ struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf<:AbstractArray,
     bias_l::Bl
     𝔉::fplan
     i𝔉::ifplan
+    linear::ifplan
     σ::F
     λ::Modes
     # Constructor for the entire fourier layer
-    function FourierLayer(Wf::Mf, Wl::Ml, bf::Bf, bl::Bl, 𝔉::fplan, i𝔉::ifplan,
+    function FourierLayer(Wf::Mf, Wl::Ml, bf::Bf, bl::Bl, 𝔉::fplan, i𝔉::ifplan, linear::ifplan,
         σ::F = identity, λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
-        Bf<:AbstractArray, Bl<:AbstractArray, fplan,
-        ifplan, F, Modes<:Int}
-        new{F,Mf,Ml,Bf,Bl,fplan,ifplan,Modes}(Wf, Wl, bf, bl, 𝔉, i𝔉, σ, λ)
+        Bf<:AbstractArray, Bl<:AbstractArray, fplan<:AbstractArray,
+        ifplan<:AbstractArray, F, Modes<:Int}
+        new{F,Mf,Ml,Bf,Bl,fplan,ifplan,Modes}(Wf, Wl, bf, bl, 𝔉, i𝔉, linear, σ, λ)
     end
 end
 
@@ -77,23 +78,30 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     # First, an ugly workaround: FFTW.jl passes keywords that cuFFT complains about when the
     # constructor is wrapped with |> gpu. Instead, you have to pass a CuArray as input to plan_rfft
     # Ugh.
-    template𝔉 = Flux.use_cuda[] == true ? CuArray{Float32}(undef,in,batch,grid) :
-                    Array{Float32}(undef,in,batch,grid)
-    templatei𝔉 = Flux.use_cuda[] == true ? CuArray{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1)) :
-                    Array{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1))
+    #template𝔉 = Flux.use_cuda[] == true ? CuArray{Float32}(undef,in,batch,grid) :
+    #                Array{Float32}(undef,in,batch,grid)
+    #templatei𝔉 = Flux.use_cuda[] == true ? CuArray{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1)) :
+    #                Array{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1))
 
-    𝔉 = plan_rfft(template𝔉,3)
-    i𝔉 = plan_irfft(templatei𝔉,grid, 3)
+    #𝔉 = plan_rfft(template𝔉,3)
+    #i𝔉 = plan_irfft(templatei𝔉,grid, 3)
+    𝔉 = similar(Wf, out, batch, floor(Int, grid/2 + 1))
+    i𝔉 = similar(Wf, out, batch, grid)
+    linear = similar(i𝔉)
 
-    return FourierLayer(Wf, Wl, bf, bl, 𝔉, i𝔉, σ, λ)
+    return FourierLayer(Wf, Wl, bf, bl, 𝔉, i𝔉, linear, σ, λ)
 end
 
+# Only train the weight array with non-zero modes
 Flux.@functor FourierLayer
+#Flux.trainable(a::FourierLayer) = (a.weight_f[:,:,1:a.λ], a.weight_l, a.bias_f, a.bias_l)
 
 # The actual layer that does stuff
 function (a::FourierLayer)(x::AbstractArray)
     # Assign the parameters
-    Wf, Wl, bf, bl, σ, 𝔉, i𝔉 = a.weight_f, a.weight_l, a.bias_f, a.bias_l, a.σ, a.𝔉, a.i𝔉
+    Wf, Wl, bf, bl, σ, = a.weight_f, a.weight_l, a.bias_f, a.bias_l, a.σ
+    𝔉, i𝔉 = a.𝔉, a.i𝔉
+    linear = a.linear
     grid = size(x,3)
 
     # The linear path
@@ -104,17 +112,18 @@ function (a::FourierLayer)(x::AbstractArray)
     # x -> 𝔉 -> Wf -> i𝔉
     # Do the Fourier transform (FFT) along the last axis of the input
     # fourier = 𝔉 * x
-    fourier = rfft(x,3)
+    𝔉 = rfft(x,3)
 
     # Multiply the weight matrix with the input using batched multiplication
-    fourier = Wf ⊠ fourier .+ bf
+    𝔉 = Wf ⊠ 𝔉 .+ bf
 
     # Do the inverse transform
     # fourier = i𝔉 * fourier
-    fourier = irfft(fourier, grid, 3)
+    i𝔉 = irfft(𝔉, grid, 3)
 
     # Return the activated sum
-    return σ.(linear + fourier)
+    # return σ.((Wl ⊠ x .+ bl) + irfft((Wf ⊠ rfft(x,3) .+ bf),grid,3))
+    return σ.(linear + i𝔉)
 end
 
 # Overload function to deal with higher-dimensional input arrays
