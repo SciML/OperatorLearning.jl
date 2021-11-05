@@ -94,6 +94,7 @@ Flux.@functor FourierLayer
 function (a::FourierLayer)(x::AbstractArray)
     # Assign the parameters
     Wf, Wl, bf, bl, σ, 𝔉, i𝔉 = a.weight_f, a.weight_l, a.bias_f, a.bias_l, a.σ, a.𝔉, a.i𝔉
+    grid = size(x,3)
 
     # The linear path
     # x -> Wl
@@ -102,13 +103,15 @@ function (a::FourierLayer)(x::AbstractArray)
     # The convolution path
     # x -> 𝔉 -> Wf -> i𝔉
     # Do the Fourier transform (FFT) along the last axis of the input
-    fourier = 𝔉 * x
+    # fourier = 𝔉 * x
+    fourier = rfft(x,3)
 
     # Multiply the weight matrix with the input using batched multiplication
     fourier = Wf ⊠ fourier .+ bf
 
     # Do the inverse transform
-    fourier = i𝔉 * fourier
+    # fourier = i𝔉 * fourier
+    fourier = irfft(fourier, grid, 3)
 
     # Return the activated sum
     return σ.(linear + fourier)
