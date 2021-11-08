@@ -30,10 +30,10 @@ The output would be the diffused variable at a later time, which makes the outpu
 struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf<:AbstractArray,
                 Bl<:AbstractArray, fplan<:AbstractArray, ifplan<:AbstractArray,
                 Modes<:Int}
-    weight_f::Mf
-    weight_l::Ml
-    bias_f::Bf
-    bias_l::Bl
+    Wf::Mf
+    Wl::Ml
+    bf::Bf
+    bl::Bl
     𝔉::fplan
     i𝔉::ifplan
     linear::ifplan
@@ -86,20 +86,21 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     #𝔉 = plan_rfft(template𝔉,3)
     #i𝔉 = plan_irfft(templatei𝔉,grid, 3)
     𝔉 = similar(Wf, out, batch, floor(Int, grid/2 + 1))
-    i𝔉 = similar(Wf, out, batch, grid)
+    i𝔉 = similar(Wl, out, batch, grid)
     linear = similar(i𝔉)
 
     return FourierLayer(Wf, Wl, bf, bl, 𝔉, i𝔉, linear, σ, λ)
 end
 
 # Only train the weight array with non-zero modes
-Flux.@functor FourierLayer
-#Flux.trainable(a::FourierLayer) = (a.weight_f[:,:,1:a.λ], a.weight_l, a.bias_f, a.bias_l)
+Flux.@functor FourierLayer (Wf, Wl, bf, bl)
+Flux.trainable(a::FourierLayer) = (a.weight_f[:,:,1:a.λ], a.weight_l,
+                                    a.bias_f[:,:,1:a.λ], a.bias_l)
 
 # The actual layer that does stuff
 function (a::FourierLayer)(x::AbstractArray)
     # Assign the parameters
-    Wf, Wl, bf, bl, σ, = a.weight_f, a.weight_l, a.bias_f, a.bias_l, a.σ
+    Wf, Wl, bf, bl, σ, = a.Wf, a.Wl, a.bf, a.bl, a.σ
     𝔉, i𝔉 = a.𝔉, a.i𝔉
     linear = a.linear
     grid = size(x,3)
@@ -131,11 +132,10 @@ end
 
 # Print nicely
 function Base.show(io::IO, l::FourierLayer)
-    print(io, "FourierLayer with\nConvolution path: (", size(l.weight_f, 2), ", ",
-            size(l.weight_f, 1), ", ", size(l.weight_f, 3))
+    print(io, "FourierLayer with\nConvolution path: (", size(l.Wf, 2), ", ",
+            size(l.Wf, 1), ", ", size(l.Wf, 3))
     print(io, ")\n")
-    print(io, "Linear path: (", size(l.weight_l, 2), ", ", size(l.weight_l, 1), ", ",
-            size(l.weight_l, 3))
+    print(io, "Linear path: (", size(l.Wl, 2), ", ", size(l.Wl, 1))
     print(io, ")\n")
     print(io, "Fourier modes: ", l.λ)
     print(io, "\n")
