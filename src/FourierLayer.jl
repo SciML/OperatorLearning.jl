@@ -27,23 +27,24 @@ So the input takes the dimension `2 x 200 x 64`.
 The output would be the diffused variable at a later time, which makes the output of the form
 `2 x 200 x 64` as well.
 """
-struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf<:AbstractArray,
-                Bl<:AbstractArray, fplan<:AbstractArray, ifplan<:AbstractArray}
-    Wf::Mf
-    Wl::Ml
-    bf::Bf
-    bl::Bl
-    𝔉::fplan
-    i𝔉::ifplan
-    linear::ifplan
+struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
+    # F: Activation, Tc/Tr: Complex/Real eltype
+    Wf::AbstractArray{Tc,3}
+    Wl::AbstractMatrix{Tr}
+    bf::AbstractArray{Tc,3}
+    bl::AbstractArray{Tr,3}
+    𝔉::AbstractArray{Tc,3}
+    i𝔉::AbstractArray{Tr,3}
+    linear::AbstractArray{Tr,3}
     σ::F
     λ::Int
     # Constructor for the entire fourier layer
-    function FourierLayer(Wf::Mf, Wl::Ml, bf::Bf, bl::Bl, 𝔉::fplan, i𝔉::ifplan, linear::ifplan,
-        σ::F = identity, λ::Int = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
-        Bf<:AbstractArray, Bl<:AbstractArray, fplan<:AbstractArray,
-        ifplan<:AbstractArray, F}
-        new{F,Mf,Ml,Bf,Bl,fplan,ifplan}(Wf, Wl, bf, bl, 𝔉, i𝔉, linear, σ, λ)
+    function FourierLayer(
+        Wf::AbstractArray{Tc,3}, Wl::AbstractMatrix{Tr}, bf::AbstractArray{Tc,3},
+        bl::AbstractArray{Tr,3}, 𝔉::AbstractArray{Tc,3}, i𝔉::AbstractArray{Tr,3},
+        linear::AbstractArray{Tr,3}, σ::F = identity, λ::Int = 12
+        ) where {F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
+        new{F,Tc,Tr}(Wf, Wl, bf, bl, 𝔉, i𝔉, linear, σ, λ)
     end
 end
 
