@@ -106,20 +106,20 @@ function (a::FourierLayer)(x::AbstractArray)
 
     # The linear path
     # x -> Wl
-    linear .= Wl ⊠ x .+ bl
+    linear = Wl ⊠ x .+ bl
 
     # The convolution path
     # x -> 𝔉 -> Wf -> i𝔉
     # Do the Fourier transform (FFT) along the last axis of the input
     # fourier = 𝔉 * x
-    𝔉 .= rfft(x,3)
+    𝔉 = rfft(x,3)
 
     # Multiply the weight matrix with the input using batched multiplication
-    𝔉 .= Wf ⊠ 𝔉 .+ bf
+    𝔉 = Wf ⊠ 𝔉 .+ bf
 
     # Do the inverse transform
     # fourier = i𝔉 * fourier
-    i𝔉 .= irfft(𝔉, grid, 3)
+    i𝔉 = irfft(𝔉, grid, 3)
 
     # Return the activated sum
     # return σ.((Wl ⊠ x .+ bl) + irfft((Wf ⊠ rfft(x,3) .+ bf),grid,3))
