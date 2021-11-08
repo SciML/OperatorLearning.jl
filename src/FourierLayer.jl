@@ -28,8 +28,7 @@ The output would be the diffused variable at a later time, which makes the outpu
 `2 x 200 x 64` as well.
 """
 struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf<:AbstractArray,
-                Bl<:AbstractArray, fplan<:AbstractArray, ifplan<:AbstractArray,
-                Modes<:Int}
+                Bl<:AbstractArray, fplan<:AbstractArray, ifplan<:AbstractArray}
     Wf::Mf
     Wl::Ml
     bf::Bf
@@ -38,13 +37,13 @@ struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf<:AbstractArray,
     i𝔉::ifplan
     linear::ifplan
     σ::F
-    λ::Modes
+    λ::Int
     # Constructor for the entire fourier layer
     function FourierLayer(Wf::Mf, Wl::Ml, bf::Bf, bl::Bl, 𝔉::fplan, i𝔉::ifplan, linear::ifplan,
-        σ::F = identity, λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
+        σ::F = identity, λ::Int = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
         Bf<:AbstractArray, Bl<:AbstractArray, fplan<:AbstractArray,
-        ifplan<:AbstractArray, F, Modes<:Int}
-        new{F,Mf,Ml,Bf,Bl,fplan,ifplan,Modes}(Wf, Wl, bf, bl, 𝔉, i𝔉, linear, σ, λ)
+        ifplan<:AbstractArray, F}
+        new{F,Mf,Ml,Bf,Bl,fplan,ifplan}(Wf, Wl, bf, bl, 𝔉, i𝔉, linear, σ, λ)
     end
 end
 
@@ -94,8 +93,7 @@ end
 
 # Only train the weight array with non-zero modes
 Flux.@functor FourierLayer (Wf, Wl, bf, bl)
-Flux.trainable(a::FourierLayer) = (a.weight_f[:,:,1:a.λ], a.weight_l,
-                                    a.bias_f[:,:,1:a.λ], a.bias_l)
+Flux.trainable(a::FourierLayer) = (a.Wf[:,:,1:a.λ], a.Wl, a.bf[:,:,1:a.λ], a.bl)
 
 # The actual layer that does stuff
 function (a::FourierLayer)(x::AbstractArray)
