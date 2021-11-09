@@ -55,7 +55,7 @@ test_loader = Flux.Data.DataLoader((xtest, ytest), batchsize=20, shuffle=true) |
 # Set up the Fourier Layer
 # 128 in- and outputs, batch size 20 as given above, grid size 1024
 # 16 modes to keep, σ activation on the gpu
-layer = FourierLayer(128,128,20,1024,16,σ,bias_fourier=false) |> device
+layer = FourierLayer(128,128,20,1024,16,gelu,bias_fourier=false) |> device
 
 # The whole architecture
 # linear transform into the latent space, 4 Fourier Layers,
