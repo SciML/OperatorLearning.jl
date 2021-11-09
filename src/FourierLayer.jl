@@ -67,24 +67,14 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     # Initialize Linear weight matrix
     Wl = initl(out, in)
 
+    # create the biases with one singleton dimension
     bf = Flux.create_bias(Wf, bias_fourier, out, 1, floor(Int, grid/2 + 1))
     bl = Flux.create_bias(Wl, bias_linear, out, 1, grid)
 
     # Pass the modes for output
     λ = modes
 
-    # Create linear operators for the FFT and IFFT for efficiency
-    # So that it has to be only pre-allocated once
-    # First, an ugly workaround: FFTW.jl passes keywords that cuFFT complains about when the
-    # constructor is wrapped with |> gpu. Instead, you have to pass a CuArray as input to plan_rfft
-    # Ugh.
-    #template𝔉 = Flux.use_cuda[] == true ? CuArray{Float32}(undef,in,batch,grid) :
-    #                Array{Float32}(undef,in,batch,grid)
-    #templatei𝔉 = Flux.use_cuda[] == true ? CuArray{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1)) :
-    #                Array{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1))
-
-    #𝔉 = plan_rfft(template𝔉,3)
-    #i𝔉 = plan_irfft(templatei𝔉,grid, 3)
+    # Pre-allocate the interim arrays for the forward pass
     𝔉 = similar(Wf, out, batch, floor(Int, grid/2 + 1))
     i𝔉 = similar(Wl, out, batch, grid)
     linear = similar(i𝔉)
@@ -111,18 +101,15 @@ function (a::FourierLayer)(x::AbstractArray)
     # The convolution path
     # x -> 𝔉 -> Wf -> i𝔉
     # Do the Fourier transform (FFT) along the last axis of the input
-    # fourier = 𝔉 * x
     𝔉 = rfft(x,3)
 
     # Multiply the weight matrix with the input using batched multiplication
     𝔉 = Wf ⊠ 𝔉 .+ bf
 
     # Do the inverse transform
-    # fourier = i𝔉 * fourier
     i𝔉 = irfft(𝔉, grid, 3)
 
     # Return the activated sum
-    # return σ.((Wl ⊠ x .+ bl) + irfft((Wf ⊠ rfft(x,3) .+ bf),grid,3))
     return σ.(linear + i𝔉)
 end
 

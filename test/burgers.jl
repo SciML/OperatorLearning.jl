@@ -61,7 +61,7 @@ layer = FourierLayer(128,128,20,1024,16,σ) |> device
 # linear transform into the latent space, 4 Fourier Layers,
 # then transform it back
 model = Chain(Dense(2,128;bias=false), layer, layer, layer, layer,
-                Dense(128,2;bias=false)) |> device
+                Dense(128,1;bias=false)) |> device
 
 # We use the ADAM optimizer for training
 learning_rate = 0.001
