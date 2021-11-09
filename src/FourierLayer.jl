@@ -27,24 +27,28 @@ So the input takes the dimension `2 x 64 x 200`.
 The output would be the diffused variable at a later time, which makes the output of the form
 `2 x 200 x 64` as well.
 """
-struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
+struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat,Bf,Bl}
     # F: Activation, Tc/Tr: Complex/Real eltype
     Wf::AbstractArray{Tc,3}
     Wl::AbstractArray{Tr,3}
-    bf::AbstractArray{Tc,3}
-    bl::AbstractArray{Tr,3}
     𝔉::AbstractArray{Tc,3}
     i𝔉::AbstractArray{Tr,3}
     linear::AbstractArray{Tr,3}
     σ::F
     λ::Int
+    bf::Bf
+    bl::Bl
     # Constructor for the entire fourier layer
     function FourierLayer(
-        Wf::AbstractArray{Tc,3}, Wl::AbstractArray{Tr,3}, bf::AbstractArray{Tc,3},
-        bl::AbstractArray{Tr,3}, 𝔉::AbstractArray{Tc,3}, i𝔉::AbstractArray{Tr,3},
-        linear::AbstractArray{Tr,3}, σ::F = identity, λ::Int = 12
-        ) where {F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
-        new{F,Tc,Tr}(Wf, Wl, bf, bl, 𝔉, i𝔉, linear, σ, λ)
+        Wf::AbstractArray{Tc,3}, Wl::AbstractArray{Tr,3}, 𝔉::AbstractArray{Tc,3}, 
+        i𝔉::AbstractArray{Tr,3}, linear::AbstractArray{Tr,3}, σ::F = identity,
+        λ::Int = 12, bf = true, bl = true) where
+        {F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
+
+        # create the biases with one singleton dimension
+        bf = Flux.create_bias(Wf, bf, size(Wf,2), 1, size(Wf,3))
+        bl = Flux.create_bias(Wl, bl, size(Wl,1), size(Wf,3), 1)
+        new{F,Tc,Tr,typeof(bf),typeof(bl)}(Wf, Wl, 𝔉, i𝔉, linear, σ, λ, bf, bl)
     end
 end
 
@@ -67,9 +71,9 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     # Initialize Linear weight matrix
     Wl = initl(out, in, 1)
 
-    # create the biases with one singleton dimension
-    bf = Flux.create_bias(Wf, bias_fourier, out, 1, floor(Int, grid/2 + 1))
-    bl = Flux.create_bias(Wl, bias_linear, out, grid, 1)
+    # Pass the bias bools
+    bf = bias_fourier
+    bl = bias_linear
 
     # Pass the modes for output
     λ = modes
@@ -78,7 +82,7 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     i𝔉 = Array{Float32}(undef, out, grid, batch)
     linear = similar(i𝔉)
 
-    return FourierLayer(Wf, Wl, bf, bl, 𝔉, i𝔉, linear, σ, λ)
+    return FourierLayer(Wf, Wl, 𝔉, i𝔉, linear, σ, λ, bf, bl)
 end
 
 # Only train the weight array with non-zero modes
