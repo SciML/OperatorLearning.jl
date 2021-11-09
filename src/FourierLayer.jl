@@ -12,9 +12,9 @@ The output though only contains the relevant Fourier modes with the rest padded 
 in the last axis as a result of the filtering.
 
 The input `x` should be a 3D tensor of shape
-(num parameters (`in`) x batch size (`batch`) x num grid points (`grid`))
+(num parameters (`in`) x num grid points (`grid`) x batch size (`batch`))
 The output `y` will be a 3D tensor of shape
-(`out` x batch size (`batch`) x num grid points (`grid`))
+(`out` x num grid points (`grid`) x batch size (`batch`))
 
 You can specify biases for the paths as you like, though the convolutional path is
 originally not intended to perform an affine transformation.
@@ -23,27 +23,30 @@ originally not intended to perform an affine transformation.
 Say you're considering a 1D diffusion problem on a 64 point grid. The input is comprised
 of the grid points as well as the IC at this point.
 The data consists of 200 instances of the solution.
-So the input takes the dimension `2 x 200 x 64`.
+So the input takes the dimension `2 x 64 x 200`.
 The output would be the diffused variable at a later time, which makes the output of the form
 `2 x 200 x 64` as well.
 """
-struct FourierLayer{F, Mf<:AbstractArray, Ml<:AbstractArray, Bf<:AbstractArray,
-                Bl<:AbstractArray, fplan, ifplan,
-                Modes<:Int}
-    weight_f::Mf
-    weight_l::Ml
-    bias_f::Bf
-    bias_l::Bl
-    𝔉::fplan
-    i𝔉::ifplan
+struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat,Bf,Bl}
+    # F: Activation, Tc/Tr: Complex/Real eltype
+    Wf::AbstractArray{Tc,3}
+    Wl::AbstractMatrix{Tr}
+    grid::Int
     σ::F
-    λ::Modes
+    λ::Int
+    bf::Bf
+    bl::Bl
     # Constructor for the entire fourier layer
-    function FourierLayer(Wf::Mf, Wl::Ml, bf::Bf, bl::Bl, 𝔉::fplan, i𝔉::ifplan,
-        σ::F = identity, λ::Modes = 12) where {Mf<:AbstractArray, Ml<:AbstractArray,
-        Bf<:AbstractArray, Bl<:AbstractArray, fplan,
-        ifplan, F, Modes<:Int}
-        new{F,Mf,Ml,Bf,Bl,fplan,ifplan,Modes}(Wf, Wl, bf, bl, 𝔉, i𝔉, σ, λ)
+    function FourierLayer(
+        Wf::AbstractArray{Tc,3}, Wl::AbstractMatrix{Tr}, 
+        grid::Int, σ::F = identity,
+        λ::Int = 12, bf = true, bl = true) where
+        {F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
+
+        # create the biases with one singleton dimension
+        bf = Flux.create_bias(Wf, bf, 1, size(Wf,2), size(Wf,3))
+        bl = Flux.create_bias(Wl, bl, 1, size(Wl,1), grid)
+        new{F,Tc,Tr,typeof(bf),typeof(bl)}(Wf, Wl, grid, σ, λ, bf, bl)
     end
 end
 
@@ -51,7 +54,7 @@ end
 # `in` and `out` refer to the dimensionality of the number of parameters
 # `modes` specifies the number of modes not to be filtered out
 # `grid` specifies the number of grid points in the data
-function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, modes = 12,
+function FourierLayer(in::Integer, out::Integer, grid::Integer, modes = 12,
                         σ = identity; initf = cglorot_uniform, initl = Flux.glorot_uniform,
                         bias_fourier=true, bias_linear=true)
 
@@ -66,55 +69,53 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     # Initialize Linear weight matrix
     Wl = initl(out, in)
 
-    bf = Flux.create_bias(Wf, bias_fourier, out, batch, floor(Int, grid/2 + 1))
-    bl = Flux.create_bias(Wl, bias_linear, out, batch, grid)
+    # Pass the bias bools
+    bf = bias_fourier
+    bl = bias_linear
 
     # Pass the modes for output
     λ = modes
+    # Pre-allocate the interim arrays for the forward pass
 
-    # Create linear operators for the FFT and IFFT for efficiency
-    # So that it has to be only pre-allocated once
-    # First, an ugly workaround: FFTW.jl passes keywords that cuFFT complains about when the
-    # constructor is wrapped with |> gpu. Instead, you have to pass a CuArray as input to plan_rfft
-    # Ugh.
-    template𝔉 = Flux.use_cuda[] != Nothing ? Array{Float32}(undef,in,batch,grid) :
-                    CuArray{Float32}(undef,in,batch,grid)
-    templatei𝔉 = Flux.use_cuda[] != Nothing ? Array{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1)) :
-                    CuArray{Complex{Float32}}(undef,out,batch,floor(Int, grid/2 + 1))
-
-    𝔉 = plan_rfft(template𝔉,3)
-    i𝔉 = plan_irfft(templatei𝔉,grid, 3)
-
-    return FourierLayer(Wf, Wl, bf, bl, 𝔉, i𝔉, σ, λ)
+    return FourierLayer(Wf, Wl, grid, σ, λ, bf, bl)
 end
 
-Flux.@functor FourierLayer
+# Only train the weight array with non-zero modes
+Flux.@functor FourierLayer 
+Flux.trainable(a::FourierLayer) = (a.Wf[:,:,1:a.λ], a.Wl, 
+                                typeof(a.bf) != Flux.Zeros ? a.bf[:,:,1:a.λ] : nothing,
+                                typeof(a.bl) != Flux.Zeros ? a.bl : nothing)
 
 # The actual layer that does stuff
 function (a::FourierLayer)(x::AbstractArray)
     # Assign the parameters
-    Wf, Wl, bf, bl, σ, 𝔉, i𝔉 = a.weight_f, a.weight_l, a.bias_f, a.bias_l, a.σ, a.𝔉, a.i𝔉
+    Wf, Wl, bf, bl, σ, = a.Wf, a.Wl, a.bf, a.bl, a.σ
+    # Do a permutation: DataLoader requires batch to be the last dim
+    # for the rest, it's more convenient to have it in the first one
+    xp = permutedims(x, [3,1,2])
 
     # The linear path
     # x -> Wl
-    @ein linear[dim_out, batchsize, dim_grid] := Wl[dim_out, dim_in] *
-                            x[dim_in, batchsize, dim_grid]
-    linear += bl
+    # linear .= batched_mul!(linear, Wl, x) .+ bl
+    @ein linear[batch, out, grid] := Wl[out, in] * xp[batch, in, grid]
+    linear .+ bl
 
     # The convolution path
     # x -> 𝔉 -> Wf -> i𝔉
-    # Do the Fourier transform (FFT) along the last axis of the input
-    fourier = 𝔉 * x
+    # Do the Fourier transform (FFT) along the grid dimension of the input and
+    # Multiply the weight matrix with the input using batched multiplication
+    # We need to permute the input to (channel,batch,grid), otherwise batching won't work
+    # 𝔉 .= batched_mul!(𝔉, Wf, rfft(permutedims(x, [1,3,2]),3)) .+ bf
+    @ein 𝔉[batch, out, grid] := Wf[in, out, grid] * rfft(xp, 3)[batch, in, grid]
+    𝔉 .+ bf
 
-    # Multiply the weight matrix with the input using the Einstein convention
-    @ein fourier[dim_out, batchsize, dim_grid] := Wf[dim_in, dim_out, dim_grid] *
-                fourier[dim_in, batchsize, dim_grid]
-    fourier += bf
     # Do the inverse transform
-    fourier = i𝔉 * fourier
+    # We need to permute back to match the shape of the linear path
+    #i𝔉 = permutedims(irfft(𝔉, size(x,2), 3), [1,3,2])
+    i𝔉 = irfft(𝔉, size(xp,3),3)
 
     # Return the activated sum
-    return σ.(linear + fourier)
+    return permutedims(σ.(linear + i𝔉), [2,3,1])
 end
 
 # Overload function to deal with higher-dimensional input arrays
@@ -122,11 +123,10 @@ end
 
 # Print nicely
 function Base.show(io::IO, l::FourierLayer)
-    print(io, "FourierLayer with\nConvolution path: (", size(l.weight_f, 2), ", ",
-            size(l.weight_f, 1), ", ", size(l.weight_f, 3))
+    print(io, "FourierLayer with\nConvolution path: (", size(l.Wf, 2), ", ",
+            size(l.Wf, 1), ", ", size(l.Wf, 3))
     print(io, ")\n")
-    print(io, "Linear path: (", size(l.weight_l, 2), ", ", size(l.weight_l, 1), ", ",
-            size(l.weight_l, 3))
+    print(io, "Linear path: (", size(l.Wl, 2), ", ", size(l.Wl, 1))
     print(io, ")\n")
     print(io, "Fourier modes: ", l.λ)
     print(io, "\n")
