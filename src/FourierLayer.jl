@@ -12,9 +12,9 @@ The output though only contains the relevant Fourier modes with the rest padded 
 in the last axis as a result of the filtering.
 
 The input `x` should be a 3D tensor of shape
-(num parameters (`in`) x batch size (`batch`) x num grid points (`grid`))
+(num parameters (`in`) x num grid points (`grid`) x batch size (`batch`))
 The output `y` will be a 3D tensor of shape
-(`out` x batch size (`batch`) x num grid points (`grid`))
+(`out` x num grid points (`grid`) x batch size (`batch`))
 
 You can specify biases for the paths as you like, though the convolutional path is
 originally not intended to perform an affine transformation.
@@ -23,7 +23,7 @@ originally not intended to perform an affine transformation.
 Say you're considering a 1D diffusion problem on a 64 point grid. The input is comprised
 of the grid points as well as the IC at this point.
 The data consists of 200 instances of the solution.
-So the input takes the dimension `2 x 200 x 64`.
+So the input takes the dimension `2 x 64 x 200`.
 The output would be the diffused variable at a later time, which makes the output of the form
 `2 x 200 x 64` as well.
 """
@@ -69,13 +69,13 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
 
     # create the biases with one singleton dimension
     bf = Flux.create_bias(Wf, bias_fourier, out, 1, floor(Int, grid/2 + 1))
-    bl = Flux.create_bias(Wl, bias_linear, out, 1, grid)
+    bl = Flux.create_bias(Wl, bias_linear, out, grid, 1)
 
     # Pass the modes for output
     λ = modes
-# Pre-allocate the interim arrays for the forward pass
+    # Pre-allocate the interim arrays for the forward pass
     𝔉 = Array{ComplexF32}(undef, out, batch, floor(Int, grid/2 + 1))
-    i𝔉 = Array{Float32}(undef, out, batch, grid)
+    i𝔉 = Array{Float32}(undef, out, grid, batch)
     linear = similar(i𝔉)
 
     return FourierLayer(Wf, Wl, bf, bl, 𝔉, i𝔉, linear, σ, λ)
@@ -91,7 +91,6 @@ function (a::FourierLayer)(x::AbstractArray)
     Wf, Wl, bf, bl, σ, = a.Wf, a.Wl, a.bf, a.bl, a.σ
     𝔉, i𝔉 = a.𝔉, a.i𝔉
     linear = a.linear
-    grid = size(x,3)
 
     # The linear path
     # x -> Wl
@@ -99,14 +98,14 @@ function (a::FourierLayer)(x::AbstractArray)
 
     # The convolution path
     # x -> 𝔉 -> Wf -> i𝔉
-    # Do the Fourier transform (FFT) along the last axis of the input
-    𝔉 = rfft(x,3)
-
+    # Do the Fourier transform (FFT) along the grid dimension of the input and
     # Multiply the weight matrix with the input using batched multiplication
-    𝔉 .= batched_mul!(𝔉, Wf, 𝔉) .+ bf
+    # We need to permute the input, otherwise batching won't work
+    𝔉 .= batched_mul!(𝔉, Wf, rfft(permutedims(x, [1,3,2]),3)) .+ bf
 
     # Do the inverse transform
-    i𝔉 = irfft(𝔉, grid, 3)
+    # We need to permute back to match the shape of the linear path
+    i𝔉 = irfft(permutedims(𝔉, [1,3,2]), size(x,2), 2)
 
     # Return the activated sum
     return σ.(linear + i𝔉)

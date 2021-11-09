@@ -49,13 +49,13 @@ xtrain, xtest = permutedims(xtrain,(3,1,2)), permutedims(xtest,(3,1,2)) |> devic
 ytrain, ytest = permutedims(ytrain,(3,1,2)), permutedims(ytest,(3,1,2)) |> device
 
 # Pass the data to the Flux DataLoader and give it a batch of 20
-train_loader = Flux.Data.DataLoader((xtrain, ytrain), batchsize=20) |> device
-test_loader = Flux.Data.DataLoader((xtest, ytest), batchsize=20) |> device
+train_loader = Flux.Data.DataLoader((xtrain, ytrain), batchsize=20, shuffle=true) |> device
+test_loader = Flux.Data.DataLoader((xtest, ytest), batchsize=20, shuffle=true) |> device
 
 # Set up the Fourier Layer
 # 128 in- and outputs, batch size 20 as given above, grid size 1024
 # 16 modes to keep, σ activation on the gpu
-layer = FourierLayer(128,128,20,1024,16,σ) |> device
+layer = FourierLayer(128,128,20,1024,16,σ,bias_fourier=false) |> device
 
 # The whole architecture
 # linear transform into the latent space, 4 Fourier Layers,
@@ -74,8 +74,7 @@ parameters = params(model)
 loss(x,y) = Flux.Losses.mse(model(x),y)
 
 # Define a callback function that gives some output during training
-data = [(xtrain, ytrain)] |> device;
-evalcb() = @show(loss(xtrain,ytrain))
+evalcb() = @show(loss(x,y))
 
 # Do the training loop
-Flux.@epochs 500 train!(loss, parameters, data, opt, cb = evalcb)
+Flux.@epochs 500 train!(loss, parameters, train_loader, opt, cb = evalcb)
