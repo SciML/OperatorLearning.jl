@@ -88,8 +88,8 @@ end
 # Only train the weight array with non-zero modes
 Flux.@functor FourierLayer 
 Flux.trainable(a::FourierLayer) = (a.Wf[:,:,1:a.λ], a.Wl, 
-                                a.bf != Flux.zeros ? a.bf[:,:,1:a.λ] : nothing,
-                                a.bl != Flux.zeros ? a.bl : nothing)
+                                typeof(a.bf) != Flux.Zeros ? a.bf[:,:,1:a.λ] : nothing,
+                                typeof(a.bl) != Flux.Zeros ? a.bl : nothing)
 
 # The actual layer that does stuff
 function (a::FourierLayer)(x::AbstractArray)
