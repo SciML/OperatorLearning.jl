@@ -30,7 +30,7 @@ The output would be the diffused variable at a later time, which makes the outpu
 struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
     # F: Activation, Tc/Tr: Complex/Real eltype
     Wf::AbstractArray{Tc,3}
-    Wl::AbstractMatrix{Tr}
+    Wl::AbstractArray{Tr,3}
     bf::AbstractArray{Tc,3}
     bl::AbstractArray{Tr,3}
     𝔉::AbstractArray{Tc,3}
@@ -40,7 +40,7 @@ struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
     λ::Int
     # Constructor for the entire fourier layer
     function FourierLayer(
-        Wf::AbstractArray{Tc,3}, Wl::AbstractMatrix{Tr}, bf::AbstractArray{Tc,3},
+        Wf::AbstractArray{Tc,3}, Wl::AbstractArray{Tr,3}, bf::AbstractArray{Tc,3},
         bl::AbstractArray{Tr,3}, 𝔉::AbstractArray{Tc,3}, i𝔉::AbstractArray{Tr,3},
         linear::AbstractArray{Tr,3}, σ::F = identity, λ::Int = 12
         ) where {F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
@@ -65,7 +65,7 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     Wf = pad_zeros(Wf, (0, floor(Int, grid/2 + 1) - modes), dims=3)
 
     # Initialize Linear weight matrix
-    Wl = initl(out, in)
+    Wl = initl(out, in, 1)
 
     # create the biases with one singleton dimension
     bf = Flux.create_bias(Wf, bias_fourier, out, 1, floor(Int, grid/2 + 1))
@@ -73,17 +73,16 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
 
     # Pass the modes for output
     λ = modes
-
-    # Pre-allocate the interim arrays for the forward pass
-    𝔉 = similar(Wf, out, batch, floor(Int, grid/2 + 1))
-    i𝔉 = similar(Wl, out, batch, grid)
+# Pre-allocate the interim arrays for the forward pass
+    𝔉 = Array{ComplexF32}(undef, out, batch, floor(Int, grid/2 + 1))
+    i𝔉 = Array{Float32}(undef, out, batch, grid)
     linear = similar(i𝔉)
 
     return FourierLayer(Wf, Wl, bf, bl, 𝔉, i𝔉, linear, σ, λ)
 end
 
 # Only train the weight array with non-zero modes
-Flux.@functor FourierLayer (Wf, Wl, bf, bl)
+Flux.@functor FourierLayer 
 Flux.trainable(a::FourierLayer) = (a.Wf[:,:,1:a.λ], a.Wl, a.bf[:,:,1:a.λ], a.bl)
 
 # The actual layer that does stuff
@@ -96,7 +95,7 @@ function (a::FourierLayer)(x::AbstractArray)
 
     # The linear path
     # x -> Wl
-    linear = Wl ⊠ x .+ bl
+    linear .= batched_mul!(linear, Wl, x) .+ bl
 
     # The convolution path
     # x -> 𝔉 -> Wf -> i𝔉
@@ -104,7 +103,7 @@ function (a::FourierLayer)(x::AbstractArray)
     𝔉 = rfft(x,3)
 
     # Multiply the weight matrix with the input using batched multiplication
-    𝔉 = Wf ⊠ 𝔉 .+ bf
+    𝔉 .= batched_mul!(𝔉, Wf, 𝔉) .+ bf
 
     # Do the inverse transform
     i𝔉 = irfft(𝔉, grid, 3)
