@@ -30,25 +30,23 @@ The output would be the diffused variable at a later time, which makes the outpu
 struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat,Bf,Bl}
     # F: Activation, Tc/Tr: Complex/Real eltype
     Wf::AbstractArray{Tc,3}
-    Wl::AbstractArray{Tr,3}
-    𝔉::AbstractArray{Tc,3}
-    i𝔉::AbstractArray{Tr,3}
-    linear::AbstractArray{Tr,3}
+    Wl::AbstractMatrix{Tr}
+    grid::Int
     σ::F
     λ::Int
     bf::Bf
     bl::Bl
     # Constructor for the entire fourier layer
     function FourierLayer(
-        Wf::AbstractArray{Tc,3}, Wl::AbstractArray{Tr,3}, 𝔉::AbstractArray{Tc,3}, 
-        i𝔉::AbstractArray{Tr,3}, linear::AbstractArray{Tr,3}, σ::F = identity,
+        Wf::AbstractArray{Tc,3}, Wl::AbstractMatrix{Tr}, 
+        grid::Int, σ::F = identity,
         λ::Int = 12, bf = true, bl = true) where
         {F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
 
         # create the biases with one singleton dimension
-        bf = Flux.create_bias(Wf, bf, size(Wf,2), 1, size(Wf,3))
-        bl = Flux.create_bias(Wl, bl, size(Wl,1), size(Wf,3), 1)
-        new{F,Tc,Tr,typeof(bf),typeof(bl)}(Wf, Wl, 𝔉, i𝔉, linear, σ, λ, bf, bl)
+        bf = Flux.create_bias(Wf, bf, 1, size(Wf,2), size(Wf,3))
+        bl = Flux.create_bias(Wl, bl, 1, size(Wl,1), grid)
+        new{F,Tc,Tr,typeof(bf),typeof(bl)}(Wf, Wl, grid, σ, λ, bf, bl)
     end
 end
 
@@ -56,7 +54,7 @@ end
 # `in` and `out` refer to the dimensionality of the number of parameters
 # `modes` specifies the number of modes not to be filtered out
 # `grid` specifies the number of grid points in the data
-function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, modes = 12,
+function FourierLayer(in::Integer, out::Integer, grid::Integer, modes = 12,
                         σ = identity; initf = cglorot_uniform, initl = Flux.glorot_uniform,
                         bias_fourier=true, bias_linear=true)
 
@@ -69,7 +67,7 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     Wf = pad_zeros(Wf, (0, floor(Int, grid/2 + 1) - modes), dims=3)
 
     # Initialize Linear weight matrix
-    Wl = initl(out, in, 1)
+    Wl = initl(out, in)
 
     # Pass the bias bools
     bf = bias_fourier
@@ -78,11 +76,8 @@ function FourierLayer(in::Integer, out::Integer, batch::Integer, grid::Integer, 
     # Pass the modes for output
     λ = modes
     # Pre-allocate the interim arrays for the forward pass
-    𝔉 = Array{ComplexF32}(undef, out, batch, floor(Int, grid/2 + 1))
-    i𝔉 = Array{Float32}(undef, out, grid, batch)
-    linear = similar(i𝔉)
 
-    return FourierLayer(Wf, Wl, 𝔉, i𝔉, linear, σ, λ, bf, bl)
+    return FourierLayer(Wf, Wl, grid, σ, λ, bf, bl)
 end
 
 # Only train the weight array with non-zero modes
@@ -95,26 +90,32 @@ Flux.trainable(a::FourierLayer) = (a.Wf[:,:,1:a.λ], a.Wl,
 function (a::FourierLayer)(x::AbstractArray)
     # Assign the parameters
     Wf, Wl, bf, bl, σ, = a.Wf, a.Wl, a.bf, a.bl, a.σ
-    𝔉, i𝔉 = a.𝔉, a.i𝔉
-    linear = a.linear
+    # Do a permutation: DataLoader requires batch to be the last dim
+    # for the rest, it's more convenient to have it in the first one
+    xp = permutedims(x, [3,1,2])
 
     # The linear path
     # x -> Wl
-    linear .= batched_mul!(linear, Wl, x) .+ bl
+    # linear .= batched_mul!(linear, Wl, x) .+ bl
+    @ein linear[batch, out, grid] := Wl[out, in] * xp[batch, in, grid]
+    linear .+ bl
 
     # The convolution path
     # x -> 𝔉 -> Wf -> i𝔉
     # Do the Fourier transform (FFT) along the grid dimension of the input and
     # Multiply the weight matrix with the input using batched multiplication
-    # We need to permute the input, otherwise batching won't work
-    𝔉 .= batched_mul!(𝔉, Wf, rfft(permutedims(x, [1,3,2]),3)) .+ bf
+    # We need to permute the input to (channel,batch,grid), otherwise batching won't work
+    # 𝔉 .= batched_mul!(𝔉, Wf, rfft(permutedims(x, [1,3,2]),3)) .+ bf
+    @ein 𝔉[batch, out, grid] := Wf[in, out, grid] * rfft(xp, 3)[batch, in, grid]
+    𝔉 .+ bf
 
     # Do the inverse transform
     # We need to permute back to match the shape of the linear path
-    i𝔉 = irfft(permutedims(𝔉, [1,3,2]), size(x,2), 2)
+    #i𝔉 = permutedims(irfft(𝔉, size(x,2), 3), [1,3,2])
+    i𝔉 = irfft(𝔉, size(xp,3),3)
 
     # Return the activated sum
-    return σ.(linear + i𝔉)
+    return permutedims(σ.(linear + i𝔉), [2,3,1])
 end
 
 # Overload function to deal with higher-dimensional input arrays

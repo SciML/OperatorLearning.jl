@@ -43,10 +43,10 @@ ytest = cat(reshape(ytest,(100,1024,1)),
             reshape(repeat(grid,100),(100,1024,1));
             dims=3) |> device
 
-# Our net wants the input in the form (2,batch,grid), though,
+# Our net wants the input in the form (2,grid,batch), though,
 # So we permute
-xtrain, xtest = permutedims(xtrain,(3,1,2)), permutedims(xtest,(3,1,2)) |> device
-ytrain, ytest = permutedims(ytrain,(3,1,2)), permutedims(ytest,(3,1,2)) |> device
+xtrain, xtest = permutedims(xtrain,(3,2,1)), permutedims(xtest,(3,2,1)) |> device
+ytrain, ytest = permutedims(ytrain,(3,2,1)), permutedims(ytest,(3,2,1)) |> device
 
 # Pass the data to the Flux DataLoader and give it a batch of 20
 train_loader = Flux.Data.DataLoader((xtrain, ytrain), batchsize=20, shuffle=true) |> device
@@ -61,7 +61,7 @@ layer = FourierLayer(128,128,20,1024,16,gelu,bias_fourier=false) |> device
 # linear transform into the latent space, 4 Fourier Layers,
 # then transform it back
 model = Chain(Dense(2,128;bias=false), layer, layer, layer, layer,
-                Dense(128,1;bias=false)) |> device
+                Dense(128,2;bias=false)) |> device
 
 # We use the ADAM optimizer for training
 learning_rate = 0.001
