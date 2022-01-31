@@ -3,7 +3,7 @@
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://pzimbrod.github.io/NeuralOperator.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://pzimbrod.github.io/NeuralOperator.jl/dev)
-[![Build Status](https://github.com/pzimbrod/NeuralOperator.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/pzimbrod/NeuralOperator.jl/actions/workflows/CI.yml)
+[![Build Status](https://github.com/pzimbrod/NeuralOperator.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/pzimbrod/NeuralOperator.jl/actions/workflows/CI.yml?query=branch%3Amaster++)
 
 A `Julia` implementation of the Fourier Neural Operator conceived by [Zongyi et al.](https://arxiv.org/abs/2010.08895) 
 using (mainly) [Flux.jl](https://github.com/FluxML/Flux.jl) and [FFTW.jl](https://github.com/JuliaMath/FFTW.jl).

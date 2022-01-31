@@ -21,5 +21,7 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/pzimbrod/NeuralOperator.jl",
+    devurl = "dev",
+    versions = ["stable" => "v^", "v#.#", devurl => devurl],
     #devbranch="main",
 )
