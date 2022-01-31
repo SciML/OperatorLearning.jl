@@ -41,6 +41,8 @@ model = FourierLayer(101, 101, 200, 100, 16, σ)
 model = FourierLayer(101, 101, 200, 100, 16, σ; bias_fourier=false)
 ```
 
+To see a full implementation, check the Burgers equation example at `examples/burgers.jl`.
+
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
@@ -48,9 +50,9 @@ model = FourierLayer(101, 101, 200, 100, 16, σ; bias_fourier=false)
 ## ToDos
 
 - [x] 1D Fourier Layer
-- [] 2D / 3D Fourier Layer
-- [] DeepONet
-- [] Physics informed Loss
+- [ ] 2D / 3D Fourier Layer
+- [ ] DeepONet
+- [ ] Physics informed Loss
 
 ## Contributing
 
