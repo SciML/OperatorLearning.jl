@@ -26,10 +26,13 @@ The data consists of 200 instances of the solution.
 Beforehand we convert the inputs into a higher-dimensional latent space with 128 nodes by using a regular `Dense` layer.
 So the input takes the dimension `128 x 64 x 200`.
 The output would be the diffused variable at a later time, which initially makes the output of the form `128 x 64 x 200` as well. Finally, we have to squeeze this high-dimensional ouptut into the one quantity of interest again by using a `Dense` layer.
+
+We wish to only keep the first 16 modes of the input and work with the classic sigmoid function as activation.
+
 So we would have:
 
 ```julia
-model = FourierLayer(2, 2, 200, 100, 16, σ)
+model = FourierLayer(128, 128, 200, 100, 16, σ)
 ```
 """
 struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat,Bf,Bl}
