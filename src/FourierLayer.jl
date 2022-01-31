@@ -11,9 +11,9 @@ specified output dimension such that In x M x N -> Out x M x N.
 The output though only contains the relevant Fourier modes with the rest padded to zero
 in the last axis as a result of the filtering.
 
-The input `x` should be a 3D tensor of shape
+The input `x` should be a rank 3 tensor of shape
 (num parameters (`in`) x num grid points (`grid`) x batch size (`batch`))
-The output `y` will be a 3D tensor of shape
+The output `y` will be a rank 3 tensor of shape
 (`out` x num grid points (`grid`) x batch size (`batch`))
 
 You can specify biases for the paths as you like, though the convolutional path is
@@ -23,9 +23,14 @@ originally not intended to perform an affine transformation.
 Say you're considering a 1D diffusion problem on a 64 point grid. The input is comprised
 of the grid points as well as the IC at this point.
 The data consists of 200 instances of the solution.
-So the input takes the dimension `2 x 64 x 200`.
-The output would be the diffused variable at a later time, which makes the output of the form
-`2 x 200 x 64` as well.
+Beforehand we convert the inputs into a higher-dimensional latent space with 128 nodes by using a regular `Dense` layer.
+So the input takes the dimension `128 x 64 x 200`.
+The output would be the diffused variable at a later time, which initially makes the output of the form `128 x 64 x 200` as well. Finally, we have to squeeze this high-dimensional ouptut into the one quantity of interest again by using a `Dense` layer.
+So we would have:
+
+```julia
+model = FourierLayer(2, 2, 200, 100, 16, σ)
+```
 """
 struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat,Bf,Bl}
     # F: Activation, Tc/Tr: Complex/Real eltype
