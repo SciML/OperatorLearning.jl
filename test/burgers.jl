@@ -50,7 +50,7 @@ ytrain, ytest = permutedims(ytrain,(3,2,1)), permutedims(ytest,(3,2,1)) |> devic
 
 # Pass the data to the Flux DataLoader and give it a batch of 20
 train_loader = Flux.Data.DataLoader((xtrain, ytrain), batchsize=20, shuffle=true) |> device
-test_loader = Flux.Data.DataLoader((xtest, ytest), batchsize=20, shuffle=true) |> device
+test_loader = Flux.Data.DataLoader((xtest, ytest), batchsize=20, shuffle=false) |> device
 
 # Set up the Fourier Layer
 # 128 in- and outputs, batch size 20 as given above, grid size 1024
@@ -78,3 +78,12 @@ evalcb() = @show(loss(x,y))
 
 # Do the training loop
 Flux.@epochs 500 train!(loss, parameters, train_loader, opt, cb = evalcb)
+
+# Accuracy metrics
+val_loader = Flux.Data.DataLoader((xtest, ytest), batchsize=1, shuffle=false) |> device
+loss = 0.0 |> device
+
+for (x,y) in val_loader
+    ŷ = model(x)
+    loss += Flux.Losses.mse(ŷ,y)
+end
