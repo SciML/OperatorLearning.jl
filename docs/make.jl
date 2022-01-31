@@ -6,7 +6,7 @@ DocMeta.setdocmeta!(NeuralOperator, :DocTestSetup, :(using NeuralOperator); recu
 makedocs(;
     modules=[NeuralOperator],
     authors="Patrick Zimbrod <patrick.zimbrod@gmail.com> and contributors",
-    repo="https://github.com/Patrick Zimbrod/NeuralOperator.jl/blob/{commit}{path}#{line}",
+    repo="https://github.com/pzimbrod/NeuralOperator.jl/blob/{commit}{path}#{line}",
     sitename="NeuralOperator.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
@@ -20,5 +20,5 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/pzimbrod/NeuralOperator.jl",
-    devbranch="main",
+    #devbranch="main",
 )
