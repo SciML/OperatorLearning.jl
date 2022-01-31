@@ -10,7 +10,7 @@ makedocs(;
     sitename="NeuralOperator.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://Patrick Zimbrod.github.io/NeuralOperator.jl",
+        canonical="https://pzimbrod.github.io/NeuralOperator.jl",
         assets=String[],
     ),
     pages=[
@@ -19,6 +19,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/Patrick Zimbrod/NeuralOperator.jl",
+    repo="github.com/pzimbrod/NeuralOperator.jl",
     devbranch="main",
 )
