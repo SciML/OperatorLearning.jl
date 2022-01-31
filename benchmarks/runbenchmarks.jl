@@ -1,4 +1,4 @@
-using NeuralOperator, Flux
+using OperatorLearning, Flux
 
 versioninfo()
 include("bench_utils.jl")

@@ -1,4 +1,4 @@
-using NeuralOperator
+using OperatorLearning
 using Test
 using Random
 

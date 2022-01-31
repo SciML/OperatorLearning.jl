@@ -1,6 +1,6 @@
 using BenchmarkTools
 using Flux
-using NeuralOperator
+using OperatorLearning
 using CUDA
 using Zygote: pullback
 

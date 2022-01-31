@@ -1,3 +1,3 @@
 ```@autodocs
-Modules = [NeuralOperator]
+Modules = [OperatorLearning]
 ```

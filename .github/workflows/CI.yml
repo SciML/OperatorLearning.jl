@@ -54,6 +54,6 @@ jobs:
         - run: |
             julia --project=docs -e '
               using Documenter: DocMeta, doctest
-              using NeuralOperator
-              DocMeta.setdocmeta!(NeuralOperator, :DocTestSetup, :(using NeuralOperator); recursive=true)
-              doctest(NeuralOperator)'
+              using OperatorLearning
+              DocMeta.setdocmeta!(OperatorLearning, :DocTestSetup, :(using OperatorLearning); recursive=true)
+              doctest(OperatorLearning)'

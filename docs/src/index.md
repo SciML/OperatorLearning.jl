@@ -1,10 +1,10 @@
 ```@meta
-CurrentModule = NeuralOperator
+CurrentModule = OperatorLearning
 ```
 
-# NeuralOperator
+# OperatorLearning
 
-Documentation for [NeuralOperator](https://github.com/Patrick Zimbrod/OperatorLearning.jl).
+Documentation for [OperatorLearning](https://github.com/pzimbrod/OperatorLearning.jl).
 
 ```@index
 ```
@@ -14,7 +14,7 @@ Documentation for [NeuralOperator](https://github.com/Patrick Zimbrod/OperatorLe
 Simply install by running in a REPL:
 
 ```julia
-pkg> add NeuralOperator
+pkg> add OperatorLearning
 ```
 
 ## Usage/Examples
@@ -27,7 +27,7 @@ Additionally, higher Fourier modes are filtered out in the convolution path wher
 The syntax for a single Fourier Layer is:
 
 ```julia
-using NeuralOperator
+using OperatorLearning
 using Flux
 
 # Input = 101, Output = 101, Batch size = 200, Grid points = 100, Fourier modes = 16

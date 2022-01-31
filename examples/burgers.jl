@@ -1,5 +1,5 @@
 using Flux: length, reshape, train!, @epochs
-using NeuralOperator, Flux, MAT
+using OperatorLearning, Flux, MAT
 
 device = gpu;
 

@@ -1,4 +1,4 @@
-module NeuralOperator
+module OperatorLearning
 
 using Base: Integer, ident_cmp, Float32
 using CUDA

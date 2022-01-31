@@ -57,7 +57,7 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 [[NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 
-[[NeuralOperator]]
+[[OperatorLearning]]
 path = ".."
 uuid = "1338832d-e311-4fa7-a4df-210c2f38d798"
 version = "0.1.0"

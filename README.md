@@ -5,8 +5,9 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://pzimbrod.github.io/OperatorLearning.jl/dev)
 [![Build Status](https://github.com/pzimbrod/OperatorLearning.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/pzimbrod/OperatorLearning.jl/actions/workflows/CI.yml?query=branch%3Amaster++)
 
-A `Julia` implementation of the Fourier Neural Operator conceived by [Zongyi et al.](https://arxiv.org/abs/2010.08895) 
-using (mainly) [Flux.jl](https://github.com/FluxML/Flux.jl) and [FFTW.jl](https://github.com/JuliaMath/FFTW.jl).
+A Package that provides Layers for the learning of (nonlinear) operators in order to solve parametric PDEs.
+
+For now, this package contains the Fourier Neural Operator originally proposed by Li et al.
 
 I decided to implement this method in Julia because coding up a layer using PyTorch in Python is rather cumbersome in comparison and Julia as a whole simply runs at comparable or faster speed than Python. Please do check out the [original work](https://github.com/zongyi-li/fourier_neural_operator) at GitHub as well.
 
@@ -17,7 +18,7 @@ The implementation of the layers is influenced heavily by the basic layers provi
 Simply install by running in a REPL:
 
 ```julia
-pkg> add NeuralOperator
+pkg> add OperatorLearning
 ```
 
 ## Usage/Examples
@@ -30,7 +31,7 @@ Additionally, higher Fourier modes are filtered out in the convolution path wher
 The syntax for a single Fourier Layer is:
 
 ```julia
-using NeuralOperator
+using OperatorLearning
 using Flux
 
 # Input = 101, Output = 101, Batch size = 200, Grid points = 100, Fourier modes = 16
@@ -57,3 +58,7 @@ To see a full implementation, check the Burgers equation example at `examples/bu
 ## Contributing
 
 Contributions are always welcome!
+
+## References
+
+- Li et al., 2020 [arXiv:2010.08895](https://arxiv.org/abs/2010.08895)
