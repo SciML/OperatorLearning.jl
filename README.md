@@ -1,6 +1,10 @@
 
 # NeuralOperator.jl
 
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://Patrick Zimbrod.github.io/NeuralOperator.jl/stable)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://Patrick Zimbrod.github.io/NeuralOperator.jl/dev)
+[![Build Status](https://github.com/Patrick Zimbrod/NeuralOperator.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/Patrick Zimbrod/NeuralOperator.jl/actions/workflows/CI.yml?query=branch%3Amain)
+
 A `Julia` implementation of the Fourier Neural Operator conceived by [Zongyi et al.](https://arxiv.org/abs/2010.08895) 
 using (mainly) [Flux.jl](https://github.com/FluxML/Flux.jl) and [FFTW.jl](https://github.com/JuliaMath/FFTW.jl).
 
@@ -10,10 +14,10 @@ The implementation of the layers is influenced heavily by the basic layers provi
 
 ## Installation
 
-This package is not yet released on the official channels. Therefore you have to add it through its GitHub link:
+Simply install by running in a REPL:
 
 ```julia
-pkg> add https://github.com/pzimbrod/NeuralOperator.jl
+pkg> add NeuralOperator
 ```
 
 ## Usage/Examples
@@ -40,6 +44,13 @@ model = FourierLayer(101, 101, 200, 100, 16, σ; bias_fourier=false)
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
+
+## ToDos
+
+- [x] 1D Fourier Layer
+- [] 2D / 3D Fourier Layer
+- [] DeepONet
+- [] Physics informed Loss
 
 ## Contributing
 
