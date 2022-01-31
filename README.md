@@ -3,7 +3,7 @@
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://pzimbrod.github.io/OperatorLearning.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://pzimbrod.github.io/OperatorLearning.jl/dev)
-[![Build Status](https://github.com/pzimbrod/OperatorLearning.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/pzimbrod/OperatorLearning.jl/actions/workflows/CI.yml?query=branch%3Amaster++)
+[![Build Status](https://github.com/pzimbrod/OperatorLearning.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/pzimbrod/OperatorLearning.jl/actions/workflows/CI.yml?query=branch%3Amaster++)
 
 A Package that provides Layers for the learning of (nonlinear) operators in order to solve parametric PDEs.
 
