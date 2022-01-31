@@ -4,7 +4,7 @@ CurrentModule = NeuralOperator
 
 # NeuralOperator
 
-Documentation for [NeuralOperator](https://github.com/Patrick Zimbrod/NeuralOperator.jl).
+Documentation for [NeuralOperator](https://github.com/Patrick Zimbrod/OperatorLearning.jl).
 
 ```@index
 ```
