@@ -1,12 +1,12 @@
 """
-FourierLayer(in, out, batch, grid, modes, σ=identity, init=glorot_uniform)
+FourierLayer(in, out, grid, modes, σ=identity, init=glorot_uniform)
 FourierLayer(Wf::AbstractArray, Wl::AbstractArray, [bias_f, bias_l, σ])
 
 Create a Layer of the Fourier Neural Operator as proposed by Zongyi et al.
 arXiv: 2010.08895
 
-The layer does a fourier transform on the last axis (the coeffs) of the input array,
-filters higher modes out by the weight matrix and transforms the second axis to the
+The layer does a fourier transform on the grid dimension of the input array,
+filters higher modes out by the weight matrix and transforms it to the
 specified output dimension such that In x M x N -> Out x M x N.
 The output though only contains the relevant Fourier modes with the rest padded to zero
 in the last axis as a result of the filtering.
@@ -23,7 +23,7 @@ originally not intended to perform an affine transformation.
 Say you're considering a 1D diffusion problem on a 64 point grid. The input is comprised
 of the grid points as well as the IC at this point.
 The data consists of 200 instances of the solution.
-Beforehand we convert the inputs into a higher-dimensional latent space with 128 nodes by using a regular `Dense` layer.
+Beforehand we convert the two input channels into a higher-dimensional latent space with 128 nodes by using a regular `Dense` layer.
 So the input takes the dimension `128 x 64 x 200`.
 The output would be the diffused variable at a later time, which initially makes the output of the form `128 x 64 x 200` as well. Finally, we have to squeeze this high-dimensional ouptut into the one quantity of interest again by using a `Dense` layer.
 
@@ -32,7 +32,7 @@ We wish to only keep the first 16 modes of the input and work with the classic s
 So we would have:
 
 ```julia
-model = FourierLayer(128, 128, 200, 100, 16, σ)
+model = FourierLayer(128, 128, 100, 16, σ)
 ```
 """
 struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat,Bf,Bl}
@@ -83,7 +83,6 @@ function FourierLayer(in::Integer, out::Integer, grid::Integer, modes = 12,
 
     # Pass the modes for output
     λ = modes
-    # Pre-allocate the interim arrays for the forward pass
 
     return FourierLayer(Wf, Wl, grid, σ, λ, bf, bl)
 end
@@ -104,7 +103,6 @@ function (a::FourierLayer)(x::AbstractArray)
 
     # The linear path
     # x -> Wl
-    # linear .= batched_mul!(linear, Wl, x) .+ bl
     @ein linear[batch, out, grid] := Wl[out, in] * xp[batch, in, grid]
     linear .+ bl
 
@@ -113,21 +111,16 @@ function (a::FourierLayer)(x::AbstractArray)
     # Do the Fourier transform (FFT) along the grid dimension of the input and
     # Multiply the weight matrix with the input using batched multiplication
     # We need to permute the input to (channel,batch,grid), otherwise batching won't work
-    # 𝔉 .= batched_mul!(𝔉, Wf, rfft(permutedims(x, [1,3,2]),3)) .+ bf
     @ein 𝔉[batch, out, grid] := Wf[in, out, grid] * rfft(xp, 3)[batch, in, grid]
     𝔉 .+ bf
 
     # Do the inverse transform
     # We need to permute back to match the shape of the linear path
-    #i𝔉 = permutedims(irfft(𝔉, size(x,2), 3), [1,3,2])
     i𝔉 = irfft(𝔉, size(xp,3),3)
 
     # Return the activated sum
     return permutedims(σ.(linear + i𝔉), [2,3,1])
 end
-
-# Overload function to deal with higher-dimensional input arrays
-#(a::FourierLayer)(x::AbstractArray) = reshape(a(reshape(x, size(x, 1), :)), :, size(x)[2:end]...)
 
 # Print nicely
 function Base.show(io::IO, l::FourierLayer)

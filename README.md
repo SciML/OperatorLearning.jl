@@ -34,12 +34,12 @@ The syntax for a single Fourier Layer is:
 using OperatorLearning
 using Flux
 
-# Input = 101, Output = 101, Batch size = 200, Grid points = 100, Fourier modes = 16
+# Input = 101, Output = 101, Grid points = 100, Fourier modes = 16
 # Activation: sigmoid (you need to import Flux in your Script to access the activations)
-model = FourierLayer(101, 101, 200, 100, 16, σ)
+model = FourierLayer(101, 101, 100, 16, σ)
 
 # Same as above, but perform strict convolution in Fourier Space
-model = FourierLayer(101, 101, 200, 100, 16, σ; bias_fourier=false)
+model = FourierLayer(101, 101, 100, 16, σ; bias_fourier=false)
 ```
 
 To see a full implementation, check the Burgers equation example at `examples/burgers.jl`.
