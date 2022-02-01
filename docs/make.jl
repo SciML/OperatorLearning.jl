@@ -16,6 +16,7 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Module Reference" => "reference.md",
+        "Frequently Asked Questions" => "faq.md",
     ],
 )
 
