@@ -43,6 +43,9 @@ model = FourierLayer(101, 101, 100, 16, σ; bias_fourier=false)
 ```
 
 To see a full implementation, check the Burgers equation example at `examples/burgers.jl`.
+Compared to the original implementation by [Li et al.](https://github.com/zongyi-li/fourier_neural_operator/blob/master/fourier_1d.py) using PyTorch, this version written in Julia clocks in about 20 - 25% faster when running on a NVIDIA RTX A5000 GPU.
+
+If you'd like to replicate the example, you need to get the dataset for learning the Burgers equation. You can get it [here](https://drive.google.com/drive/folders/1UnbQh2WWc6knEHbLn-ZaXrKUZhp7pjt-) or alternatively use the provided [scripts](https://github.com/zongyi-li/fourier_neural_operator/tree/master/data_generation/burgers).
 
 ## License
 
@@ -57,7 +60,7 @@ To see a full implementation, check the Burgers equation example at `examples/bu
 
 ## Contributing
 
-Contributions are always welcome!
+Contributions are always welcome! Please submit a PR if you'd like to participate in the project.
 
 ## References
 
