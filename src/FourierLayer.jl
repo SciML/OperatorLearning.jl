@@ -1,8 +1,8 @@
 """
-FourierLayer(in, out, grid, modes, σ=identity, init=glorot_uniform)
-FourierLayer(Wf::AbstractArray, Wl::AbstractArray, [bias_f, bias_l, σ])
+`FourierLayer(in, out, grid, modes, σ=identity, init=glorot_uniform)`
+`FourierLayer(Wf::AbstractArray, Wl::AbstractArray, [bias_f, bias_l, σ])`
 
-Create a Layer of the Fourier Neural Operator as proposed by Zongyi et al.
+Create a Layer of the Fourier Neural Operator as proposed by Li et al.
 arXiv: 2010.08895
 
 The layer does a fourier transform on the grid dimension of the input array,
