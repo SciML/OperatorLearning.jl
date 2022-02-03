@@ -1,6 +1,10 @@
 
 # OperatorLearning.jl
 
+<p align="center">
+<img width="400px" src="https://raw.githubusercontent.com/pzimbrod/pzimbrod.github.io/logo.png"/>
+</p>
+
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://pzimbrod.github.io/OperatorLearning.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://pzimbrod.github.io/OperatorLearning.jl/dev)
 [![Build Status](https://github.com/pzimbrod/OperatorLearning.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/pzimbrod/OperatorLearning.jl/actions/workflows/CI.yml?query=branch%3Amaster++)
