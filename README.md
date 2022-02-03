@@ -2,7 +2,7 @@
 # OperatorLearning.jl
 
 <p align="center">
-<img width="400px" src="https://raw.githubusercontent.com/pzimbrod/pzimbrod.github.io/logo.png"/>
+<img width="400px" src="https://pzimbrod.github.io/OperatorLearning.jl/dev/assets/logo.png"/>
 </p>
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://pzimbrod.github.io/OperatorLearning.jl/stable)
