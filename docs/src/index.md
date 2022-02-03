@@ -4,10 +4,11 @@ CurrentModule = OperatorLearning
 
 # OperatorLearning
 
-Documentation for [OperatorLearning](https://github.com/pzimbrod/OperatorLearning.jl).
+A Package that provides Layers for the learning of (nonlinear) operators in order to solve parametric PDEs.
 
-```@index
-```
+!!!note
+
+    This package is still under heavy development and there are likely still a few things to iron out. If you find a bug or something to improve, please feel free to open a new issue or submit a PR in the [GitHub Repo](https://github.com/pzimbrod/OperatorLearning.jl)
 
 ## Installation
 
