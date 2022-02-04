@@ -1,5 +1,5 @@
 using OperatorLearning
-using Documenter
+using Documenter, DocumenterTools
 
 DocMeta.setdocmeta!(OperatorLearning, :DocTestSetup, :(using OperatorLearning); recursive=true)
 
