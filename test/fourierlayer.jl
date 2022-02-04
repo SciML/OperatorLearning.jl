@@ -15,7 +15,7 @@ using Test, Random, Flux
         # Wf
         @test size(params(FourierLayer(128, 64, 100, 20))[1]) == (128, 64, 20)
         # Wl
-        @test size(params(FourierLayer(128, 64, 100, 20))[2]) == (128, 64, 20)
+        @test size(params(FourierLayer(128, 64, 100, 20))[2]) == (64, 128)
         # bf
         @test size(params(FourierLayer(128, 64, 100, 20))[3]) == (1, 64, 20)
         # bl
