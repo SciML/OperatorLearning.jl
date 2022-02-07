@@ -10,10 +10,12 @@ using Random: AbstractRNG
 using Flux: nfan, glorot_uniform, batch
 using OMEinsum
 
-export FourierLayer
+export FourierLayer, DeepONet
 
 include("FourierLayer.jl")
+include("DeepONet.jl")
 include("ComplexWeights.jl")
 include("batched.jl")
+include("subnets.jl")
 
 end # module
