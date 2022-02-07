@@ -12,7 +12,7 @@
 
 A Package that provides Layers for the learning of (nonlinear) operators in order to solve parametric PDEs.
 
-For now, this package contains the Fourier Neural Operator originally proposed by Li et al.
+For now, this package contains the Fourier Neural Operator originally proposed by Li et al [1] as well as the DeepONet conceived by Lu et al [2].
 
 I decided to implement this method in Julia because coding up a layer using PyTorch in Python is rather cumbersome in comparison and Julia as a whole simply runs at comparable or faster speed than Python. Please do check out the [original work](https://github.com/zongyi-li/fourier_neural_operator) at GitHub as well.
 
@@ -69,4 +69,5 @@ Contributions are always welcome! Please submit a PR if you'd like to participat
 
 ## References
 
-- Li et al., 2020 [arXiv:2010.08895](https://arxiv.org/abs/2010.08895)
+[1] Z. Li et al., „Fourier Neural Operator for Parametric Partial Differential Equations“, [arXiv:2010.08895](https://arxiv.org/abs/2010.08895) [cs, math], May 2021
+[2] L. Lu, P. Jin, and G. E. Karniadakis, „DeepONet: Learning nonlinear operators for identifying differential equations based on the universal approximation theorem of operators“, [arXiv:1910.03193](http://arxiv.org/abs/1910.03193) [cs, stat], Apr. 2020
