@@ -96,7 +96,8 @@ Flux.trainable(a::FourierLayer) = (a.Wf[:,:,1:a.λ], a.Wl,
 # The actual layer that does stuff
 function (a::FourierLayer)(x::AbstractArray)
     # Assign the parameters
-    Wf, Wl, bf, bl, σ, = a.Wf, a.Wl, a.bf, a.bl, a.σ
+    Wf, Wl, bf, bl, σ, = a.Wf, a.Wl, a.bf, a.bl, NNlib.fast_act(a.σ, x)
+
     # Do a permutation: DataLoader requires batch to be the last dim
     # for the rest, it's more convenient to have it in the first one
     xp = permutedims(x, [3,1,2])
