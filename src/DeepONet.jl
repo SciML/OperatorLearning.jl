@@ -64,12 +64,6 @@ Trunk net: (Chain(Dense(1, 24), Dense(24, 72)))
 struct DeepONet
     branch_net::Flux.Chain
     trunk_net::Flux.Chain
-    # Constructor for the DeepONet
-    function DeepONet(
-        branch_net::Flux.Chain,
-        trunk_net::Flux.Chain)
-        new(branch_net, trunk_net)
-    end
 end
 
 # Declare the function that assigns Weights and biases to the layer
@@ -78,6 +72,10 @@ function DeepONet(architecture_branch::Tuple, architecture_trunk::Tuple,
                         init_branch = Flux.glorot_uniform,
                         init_trunk = Flux.glorot_uniform,
                         bias_branch=true, bias_trunk=true)
+
+    @assert architecture_branch[end] == architecture_trunk[end] "Branch and Trunk
+    net must share the same amount of nodes in the last layer. Otherwise Σᵢ bᵢⱼ tᵢₖ
+    won't work."
 
     # To construct the subnets we use the helper function in subnets.jl
     # Initialize the branch net
@@ -103,7 +101,7 @@ function (a::DeepONet)(x::AbstractMatrix, y::AbstractVecOrMat)
     # However, inputs are normally given with batching done in the same dim
     # so we need to adjust (i.e. transpose) one of the inputs,
     # and that's easiest on the matrix-type input
-    return branch(x) * trunk(y)'
+    return branch(x)' * trunk(y)
 end
 
 # Handling batches:
