@@ -17,8 +17,8 @@ x --- branch --
                |
 y --- trunk ---
 
-Where `x` represent the parameters of the PDE, discretely evaluated at its respective sensors,
-and `y` are the probing locations for the operator to be trained.
+Where `x` represents the input function, discretely evaluated at its respective sensors. So the ipnut is of shape [m] for one instance or [m x b] for a training set.
+`y` are the probing locations for the operator to be trained. It has shape [N x n] for N different variables in the PDE (i.e. spatial and temporal coordinates) with each n distinct evaluation points.
 `u` is the solution of the queried instance of the PDE, given by the specific choice of parameters.
 
 Both inputs `x` and `y` are multiplied together via dot product Σᵢ bᵢⱼ tᵢₖ.
@@ -30,6 +30,15 @@ You can set up this architecture in two ways:
 2. By passing two architectures in the form of two Chain structs directly. Do this if you want more flexibility and e.g. use an RNN or CNN instead of simple `Dense` layers.
 
 Strictly speaking, DeepONet does not imply either of the branch or trunk net to be a simple DNN. Usually though, this is the case which is why it's treated as the default case here.
+
+# Example
+
+Consider a transient 1D advection problem ∂ₜu + u ⋅ ∇u = 0, with an IC u(x,0) = g(x).
+We are given several (b = 200) instances of the IC, discretized at 50 points each and want to query the solution for 100 different locations and times [0;1].
+
+That makes the branch input of shape [50 x 200] and the trunk input of shape [2 x 100].
+
+# Usage
 
 ```julia
 julia> model = DeepONet((32,64,72), (24,64,72))
@@ -73,9 +82,7 @@ function DeepONet(architecture_branch::Tuple, architecture_trunk::Tuple,
                         init_trunk = Flux.glorot_uniform,
                         bias_branch=true, bias_trunk=true)
 
-    @assert architecture_branch[end] == architecture_trunk[end] "Branch and Trunk
-    net must share the same amount of nodes in the last layer. Otherwise Σᵢ bᵢⱼ tᵢₖ
-    won't work."
+    @assert architecture_branch[end] == architecture_trunk[end] "Branch and Trunk net must share the same amount of nodes in the last layer. Otherwise Σᵢ bᵢⱼ tᵢₖ won't work."
 
     # To construct the subnets we use the helper function in subnets.jl
     # Initialize the branch net
@@ -90,32 +97,19 @@ end
 
 Flux.@functor DeepONet
 
-# The actual layer that does stuff
-# x needs to be at least a 2-dim array,
-# since we need n inputs, evaluated at m locations
-function (a::DeepONet)(x::AbstractMatrix, y::AbstractVecOrMat)
+#= The actual layer that does stuff
+x is the input function, evaluated at m locations (or m x b in case of batches)
+y is the array of sensors, i.e. the variables of the output function
+with shape (N x n) - N different variables with each n evaluation points =#
+function (a::DeepONet)(x::AbstractVecOrMat, y::AbstractVecOrMat)
     # Assign the parameters
     branch, trunk = a.branch_net, a.trunk_net
 
-    # Dot product needs a dim to contract
-    # However, inputs are normally given with batching done in the same dim
-    # so we need to adjust (i.e. transpose) one of the inputs,
-    # and that's easiest on the matrix-type input
+    #= Dot product needs a dim to contract
+    However, we perform the transformations by the NNs always in the first dim
+    so we need to adjust (i.e. transpose) one of the inputs,
+    which we do on the branch input here =#
     return branch(x)' * trunk(y)
-end
-
-# Handling batches:
-# We use basically the same function, but using NNlib's batched_mul instead of
-# regular matrix-matrix multiplication
-function (a::DeepONet)(x::AbstractArray, y::AbstractVecOrMat)
-    # Assign the parameters
-    branch, trunk = a.branch_net, a.trunk_net
-
-    # Dot product needs a dim to contract
-    # However, inputs are normally given with batching done in the same dim
-    # so we need to adjust (i.e. transpose) one of the inputs,
-    # and that's easiest on the matrix-type input
-    return branch(x) ⊠ trunk(y)'
 end
 
 # Sensors stay the same and shouldn't be batched
