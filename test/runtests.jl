@@ -8,6 +8,10 @@ Random.seed!(0)
     include("fourierlayer.jl")
 end
 
+@testset "DeepONet" begin
+    include("deeponet.jl")
+end
+
 @testset "Weights" begin
     include("complexweights.jl")
 end

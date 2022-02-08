@@ -12,9 +12,9 @@
 
 A Package that provides Layers for the learning of (nonlinear) operators in order to solve parametric PDEs.
 
-For now, this package contains the Fourier Neural Operator originally proposed by Li et al.
+For now, this package contains the Fourier Neural Operator originally proposed by Li et al [1] as well as the DeepONet conceived by Lu et al [2].
 
-I decided to implement this method in Julia because coding up a layer using PyTorch in Python is rather cumbersome in comparison and Julia as a whole simply runs at comparable or faster speed than Python. Please do check out the [original work](https://github.com/zongyi-li/fourier_neural_operator) at GitHub as well.
+I decided to implement this method in Julia because coding up a layer using PyTorch in Python is rather cumbersome in comparison and Julia as a whole simply runs at comparable or faster speed than Python.
 
 The implementation of the layers is influenced heavily by the basic layers provided in the [Flux.jl](https://github.com/FluxML/Flux.jl) package.
 
@@ -27,6 +27,8 @@ pkg> add OperatorLearning
 ```
 
 ## Usage/Examples
+
+### Fourier Layer
 
 The basic workflow is more or less in line with the layer architectures that `Flux` provides, i.e. you construct individual layers, chain them if desired and pass the inputs as arguments to the layers.
 
@@ -47,10 +49,33 @@ model = FourierLayer(101, 101, 100, 16, σ)
 model = FourierLayer(101, 101, 100, 16, σ; bias_fourier=false)
 ```
 
-To see a full implementation, check the Burgers equation example at `examples/burgers.jl`.
+To see a full implementation, check the Burgers equation example at `examples/burgers_FNO.jl`.
 Compared to the original implementation by [Li et al.](https://github.com/zongyi-li/fourier_neural_operator/blob/master/fourier_1d.py) using PyTorch, this version written in Julia clocks in about 20 - 25% faster when running on a NVIDIA RTX A5000 GPU.
 
 If you'd like to replicate the example, you need to get the dataset for learning the Burgers equation. You can get it [here](https://drive.google.com/drive/folders/1UnbQh2WWc6knEHbLn-ZaXrKUZhp7pjt-) or alternatively use the provided [scripts](https://github.com/zongyi-li/fourier_neural_operator/tree/master/data_generation/burgers).
+
+### DeepONet
+
+The `DeepONet` function basically sets up two separate Flux `Chain` structs and transforms the two input arrays into one via einsum/dot product.
+
+You can either set up a "vanilla" DeepONet via the constructor function which sets up `Dense` layers for you or, if you feel fancy, pass two Chains directly to the function so you can use other architectures such as CNN or RNN as well.
+The former takes two tuples that describe each architecture. E.g. `(32,64,72)` sets up a DNN with 32 neurons in the first, 64 in the second and 72 in the last layer.
+
+```julia
+using OperatorLearning
+using Flux
+
+# Create a DeepONet with branch 32 -> 64 -> 72 and sigmoid activation
+# and trunk 24 -> 64 -> 72 and tanh activation without biases
+model = DeepONet((32,64,72), (24,64,72), σ, tanh; init_branch=Flux.glorot_normal, bias_trunk=false)
+
+# Alternatively, set up your own nets altogether and pass them to DeepONet
+branch = Chain(Dense(2,128),Dense(128,64),Dense(64,72))
+trunk = Chain(Dense(1,24),Dense(24,72))
+model = DeepONet(branch,trunk)
+```
+
+For usage, check the Burgers equation example at `examples/burgers_DeepONet.jl`.
 
 ## License
 
@@ -60,7 +85,7 @@ If you'd like to replicate the example, you need to get the dataset for learning
 
 - [x] 1D Fourier Layer
 - [ ] 2D / 3D Fourier Layer
-- [ ] DeepONet
+- [x] DeepONet
 - [ ] Physics informed Loss
 
 ## Contributing
@@ -69,4 +94,6 @@ Contributions are always welcome! Please submit a PR if you'd like to participat
 
 ## References
 
-- Li et al., 2020 [arXiv:2010.08895](https://arxiv.org/abs/2010.08895)
+[1] Z. Li et al., „Fourier Neural Operator for Parametric Partial Differential Equations“, [arXiv:2010.08895](https://arxiv.org/abs/2010.08895) [cs, math], May 2021
+
+[2] L. Lu, P. Jin, and G. E. Karniadakis, „DeepONet: Learning nonlinear operators for identifying differential equations based on the universal approximation theorem of operators“, [arXiv:1910.03193](http://arxiv.org/abs/1910.03193) [cs, stat], Apr. 2020

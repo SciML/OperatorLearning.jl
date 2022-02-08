@@ -1,4 +1,4 @@
-using Flux: length, reshape, train!, @epochs
+using Flux: length, reshape, train!, throttle, @epochs
 using OperatorLearning, Flux, MAT
 
 device = gpu;
@@ -74,10 +74,12 @@ parameters = params(model)
 loss(x,y) = Flux.Losses.mse(model(x),y)
 
 # Define a callback function that gives some output during training
-evalcb() = @show(loss(x,y))
+evalcb() = @show(loss(xtest,ytest))
+# Print the callback only every 5 seconds, 
+throttled_cb = throttle(evalcb, 5)
 
 # Do the training loop
-Flux.@epochs 500 train!(loss, parameters, train_loader, opt, cb = evalcb)
+Flux.@epochs 500 train!(loss, parameters, train_loader, opt, cb = throttled_cb)
 
 # Accuracy metrics
 val_loader = Flux.Data.DataLoader((xtest, ytest), batchsize=1, shuffle=false) |> device
