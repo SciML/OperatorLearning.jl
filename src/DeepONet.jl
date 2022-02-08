@@ -36,7 +36,7 @@ Strictly speaking, DeepONet does not imply either of the branch or trunk net to 
 Consider a transient 1D advection problem ∂ₜu + u ⋅ ∇u = 0, with an IC u(x,0) = g(x).
 We are given several (b = 200) instances of the IC, discretized at 50 points each and want to query the solution for 100 different locations and times [0;1].
 
-That makes the branch input of shape [50 x 200] and the trunk input of shape [2 x 100].
+That makes the branch input of shape [50 x 200] and the trunk input of shape [2 x 100]. So the input for the branch net is 50 and 100 for the trunk net.
 
 # Usage
 
@@ -101,7 +101,7 @@ Flux.@functor DeepONet
 x is the input function, evaluated at m locations (or m x b in case of batches)
 y is the array of sensors, i.e. the variables of the output function
 with shape (N x n) - N different variables with each n evaluation points =#
-function (a::DeepONet)(x::AbstractVecOrMat, y::AbstractVecOrMat)
+function (a::DeepONet)(x::AbstractArray, y::AbstractVecOrMat)
     # Assign the parameters
     branch, trunk = a.branch_net, a.trunk_net
 
