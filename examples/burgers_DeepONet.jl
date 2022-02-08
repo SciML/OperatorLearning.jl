@@ -39,7 +39,8 @@ grid = collect(range(0, 1, length=1024))' |> device
 # Create the DeepONet:
 # IC is given on grid of 1024 points, and we solve for a fixed time t in one
 # spatial dimension x, making the branch input of size 1024 and trunk size 1
-model = DeepONet((1024,1024,1024),(1,1024,1024))
+# We choose GeLU activation for both subnets
+model = DeepONet((1024,1024,1024),(1,1024,1024),gelu,gelu) |> device
 
 # We use the ADAM optimizer for training
 learning_rate = 0.001
@@ -60,12 +61,3 @@ throttled_cb = throttle(evalcb, 5)
 
 # Do the training loop
 Flux.@epochs 500 train!(loss, parameters, [(xtrain,ytrain,grid)], opt, cb = evalcb)
-
-# Accuracy metrics
-val_loader = Flux.Data.DataLoader((xtest, ytest), batchsize=1, shuffle=false) |> device
-loss = 0.0 |> device
-
-for (x,y) in val_loader
-    ŷ = model(x)
-    loss += Flux.Losses.mse(ŷ,y)
-end
