@@ -15,8 +15,11 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
-        "Module Reference" => "reference.md",
+        "Examples" =>
+            ["Burgers Equation with FNO" => "examples/burgers_FNO.md",
+             "Burgers Equation with DeepONet" => "examples/burgers_DeepONet.md"],
         "Frequently Asked Questions" => "faq.md",
+        "Module Reference" => "reference.md",
     ],
 )
 

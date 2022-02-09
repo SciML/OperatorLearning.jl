@@ -18,7 +18,9 @@ Simply install by running in a REPL:
 pkg> add OperatorLearning
 ```
 
-## Usage/Examples
+## Usage
+
+### Fourier Neural Operator
 
 The basic workflow is more or less in line with the layer architectures that `Flux` provides, i.e. you construct individual layers, chain them if desired and pass the inputs as arguments to the layers.
 
@@ -31,12 +33,34 @@ The syntax for a single Fourier Layer is:
 using OperatorLearning
 using Flux
 
-# Input = 101, Output = 101, Batch size = 200, Grid points = 100, Fourier modes = 16
+# Input = 101, Output = 101, Grid points = 100, Fourier modes = 16
 # Activation: sigmoid (you need to import Flux in your Script to access the activations)
-model = FourierLayer(101, 101, 200, 100, 16, σ)
+model = FourierLayer(101, 101, 100, 16, σ)
 
 # Same as above, but perform strict convolution in Fourier Space
-model = FourierLayer(101, 101, 200, 100, 16, σ; bias_fourier=false)
+model = FourierLayer(101, 101, 100, 16, σ; bias_fourier=false)
 ```
 
-To see a full implementation, check the Burgers equation example at `examples/burgers.jl`.
+To see a full implementation, check the corresponding [Burgers equation example](examples/burgers_FNO.md).
+
+### DeepONet
+
+The workflow here is a little different than with Fourier Neural Operator. In this case, you create the entire architecture by specifying two tuples corresponding to the architecture of branch and trunk net.
+
+This creates a "vanilla" DeepONet where branch and trunk net are simply Chains of Dense layers. You can however use any other architecture in the subnets as well, as long as the outputs of the two match. Otherwise, the contraction operation won't work due to dimension mismatch.
+
+```julia
+using OperatorLearning
+using Flux
+
+# Create a DeepONet with branch 32 -> 64 -> 72 and sigmoid activation
+# and trunk 24 -> 64 -> 72 and tanh activation without biases
+model = DeepONet((32,64,72), (24,64,72), σ, tanh; init_branch=Flux.glorot_normal, bias_trunk=false)
+
+# Alternatively, set up your own nets altogether and pass them to DeepONet
+branch = Chain(Dense(2,128),Dense(128,64),Dense(64,72))
+trunk = Chain(Dense(1,24),Dense(24,72))
+model = DeepONet(branch,trunk)
+```
+
+To see a full implementation, check the corresponding [Burgers equation example](examples/burgers_DeepONet.md).

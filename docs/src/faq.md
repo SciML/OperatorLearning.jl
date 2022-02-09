@@ -10,6 +10,8 @@ Currently, you need solved instances of the system you're trying to approximate 
 
 That is, you'll need to gather data (probably using numerical simulations) that include the solution vector, the grid and the parameters of the PDE (system).
 
+In case you want to train a DeepONet, instantiating a grid is trivial since the sensor locations (the grid) does not necessarily need to match the discretization of the input function. So you can just create the arrays yourself as you like.
+
 However, future work includes implementing physics-informed operator approximations which have been shown to be able to lighten the amount of training data needed or even alleviate it altogether (see e.g. [[1](https://doi.org/10.1126/sciadv.abi8605)] or [[2](http://arxiv.org/abs/2111.03794)]).
 
 ## What about hardware and distributed computing?

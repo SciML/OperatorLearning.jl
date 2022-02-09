@@ -32,10 +32,6 @@ ytest = vars["u"][end-99:end, 1:subsample:end] |> device;
 # `collect` converts data type `range` into an array
 grid = collect(range(0, 1, length=1024))' |> device
 
-# Pass the data to the Flux DataLoader and give it a batch of 20
-#train_loader = Flux.Data.DataLoader((xtrain, ytrain), batchsize=20, shuffle=true) |> device
-#test_loader = Flux.Data.DataLoader((xtest, ytest), batchsize=20, shuffle=false) |> device
-
 # Create the DeepONet:
 # IC is given on grid of 1024 points, and we solve for a fixed time t in one
 # spatial dimension x, making the branch input of size 1024 and trunk size 1
