@@ -4,7 +4,7 @@ This example mostly replicates the original work by [Li et al](https://github.co
 
 We try to create an operator for the Burgers equation
 
-$$ \partial_t u(x,t) + \partial_x (u^2(x,t)/2) = \nu \partial_{xx} u(x,t) $$
+$\partial_t u(x,t) + \partial_x (u^2(x,t)/2) = \nu \partial_{xx} u(x,t)$
 
 in one dimension for a unit spacial and temporal domain. The operator maps the initial condition $u(x,0) = u_0(x)$ to the flow field at the final time $u(x,1)$.
 
