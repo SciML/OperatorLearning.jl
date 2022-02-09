@@ -20,6 +20,8 @@ pkg> add OperatorLearning
 
 ## Usage
 
+In total, the exported layers behave like you would expect from ones that `Flux.jl` provides, i.e. you can use basically all the tools that come along with `Flux` to do training.
+
 ### Fourier Neural Operator
 
 The basic workflow is more or less in line with the layer architectures that `Flux` provides, i.e. you construct individual layers, chain them if desired and pass the inputs as arguments to the layers.
