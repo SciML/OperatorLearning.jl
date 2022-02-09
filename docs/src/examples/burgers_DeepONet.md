@@ -53,7 +53,7 @@ ytest = vars["u"][end-99:end, 1:subsample:end] |> device;
 
 One particular thing to note here is that we need to permute the array containing the initial condition so that the inner product of DeepONet works. This is because we need to do the following contraction:
 
-$\sum\limits_i t_{ji} b{ik} = u_{jk}$
+$\sum\limits_i t_{ji} b_{ik} = u_{jk}$
 
 For now, we only have one input and one output array. In addition, we need another input array that provides the probing locations for the operator $u_1(x) = \mathcal{G}(u_0)(x)$. In theory, we could choose those arbitrarily. For sake of simplicity though, we simply create the same equispaced grid that the original data was sampled from, i.e. a 1-D grid of 1024 equispaced points in [0;1]. Again, we need to transpose the array so that the array dim that is transformed by the trunk network is in the first column - otherwise the inner product would be much more cumbersome to handle.
 
