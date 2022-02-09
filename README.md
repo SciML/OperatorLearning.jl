@@ -5,6 +5,7 @@
 <img width="400px" src="https://pzimbrod.github.io/OperatorLearning.jl/dev/assets/logo.png"/>
 </p>
 
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://pzimbrod.github.io/OperatorLearning.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://pzimbrod.github.io/OperatorLearning.jl/dev)
 [![Build Status](https://github.com/pzimbrod/OperatorLearning.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/pzimbrod/OperatorLearning.jl/actions/workflows/CI.yml?query=branch%3Amaster++)
 [![codecov](https://codecov.io/gh/pzimbrod/OperatorLearning.jl/branch/master/graph/badge.svg?token=NM16L5S4FX)](https://codecov.io/gh/pzimbrod/OperatorLearning.jl)
