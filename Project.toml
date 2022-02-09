@@ -1,7 +1,7 @@
 name = "OperatorLearning"
 uuid = "5913d0e6-5bb6-45e3-8a06-341cf4fd0203"
 authors = ["Patrick Zimbrod <76100656+pzimbrod@users.noreply.github.com>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
