@@ -2,12 +2,13 @@
 # OperatorLearning.jl
 
 <p align="center">
-<img width="400px" src="https://pzimbrod.github.io/OperatorLearning.jl/dev/assets/logo.png"/>
+<img width="400px" src="https://operatorlearning.sciml.ai/dev/assets/logo.png"/>
 </p>
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://operatorlearning.sciml.ai/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://operatorlearning.sciml.ai/dev)
 [![Build Status](https://github.com/pzimbrod/OperatorLearning.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/pzimbrod/OperatorLearning.jl/actions/workflows/CI.yml?query=branch%3Amaster++)
+[![Build status](https://badge.buildkite.com/f0b3743420ce32c7b6f8fe974440b6fed08d68c5a244348924.svg)](https://buildkite.com/julialang/operatorlearning-dot-jl)
 [![codecov](https://codecov.io/gh/pzimbrod/OperatorLearning.jl/branch/master/graph/badge.svg?token=NM16L5S4FX)](https://codecov.io/gh/pzimbrod/OperatorLearning.jl)
 
 A Package that provides Layers for the learning of (nonlinear) operators in order to solve parametric PDEs.
