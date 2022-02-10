@@ -17,7 +17,6 @@ FFTW = "1"
 Flux = "0.12"
 NNlib = "0.8"
 OMEinsum = "0.6"
-Revise = "3"
 julia = "1.6"
 
 [extras]
