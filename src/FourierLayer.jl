@@ -52,7 +52,7 @@ struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},N,Tr<:AbstractFloat,Bf,Bl}
         {F,Tc<:Complex{<:AbstractFloat},N,Tr<:AbstractFloat}
 
         # create the biases with one singleton dimension
-        bf = Flux.create_bias(Wf, bf, 1, size(Wf,2), size(Wf,3))
+        bf = Flux.create_bias(Wf, bf, 1, size(Wf,2), Int.(grid ./ 2 .+ 1)...)
         bl = Flux.create_bias(Wl, bl, 1, size(Wl,1), grid...)
         new{F,Tc,N,Tr,typeof(bf),typeof(bl)}(Wf, Wl, grid, σ, λ, bf, bl)
     end
