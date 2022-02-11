@@ -35,26 +35,26 @@ So we would have:
 model = FourierLayer(128, 128, 100, 16, σ)
 ```
 """
-struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat,Bf,Bl}
+struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},N,Tr<:AbstractFloat,Bf,Bl}
     # F: Activation, Tc/Tr: Complex/Real eltype
-    Wf::AbstractArray{Tc,3}
+    Wf::AbstractArray{Tc,N}
     Wl::AbstractMatrix{Tr}
-    grid::Int
+    grid::Tuple
     σ::F
-    λ::Int
+    λ::Tuple
     bf::Bf
     bl::Bl
     # Constructor for the entire fourier layer
     function FourierLayer(
-        Wf::AbstractArray{Tc,3}, Wl::AbstractMatrix{Tr}, 
-        grid::Int, σ::F = identity,
-        λ::Int = 12, bf = true, bl = true) where
-        {F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
+        Wf::AbstractArray{Tc,N}, Wl::AbstractMatrix{Tr}, 
+        grid::Tuple,σ::F = identity,
+        λ::Tuple = (12), bf = true, bl = true) where
+        {F,Tc<:Complex{<:AbstractFloat},N,Tr<:AbstractFloat}
 
         # create the biases with one singleton dimension
         bf = Flux.create_bias(Wf, bf, 1, size(Wf,2), size(Wf,3))
-        bl = Flux.create_bias(Wl, bl, 1, size(Wl,1), grid)
-        new{F,Tc,Tr,typeof(bf),typeof(bl)}(Wf, Wl, grid, σ, λ, bf, bl)
+        bl = Flux.create_bias(Wl, bl, 1, size(Wl,1), grid...)
+        new{F,Tc,N,Tr,typeof(bf),typeof(bl)}(Wf, Wl, grid, σ, λ, bf, bl)
     end
 end
 
@@ -62,17 +62,31 @@ end
 # `in` and `out` refer to the dimensionality of the number of parameters
 # `modes` specifies the number of modes not to be filtered out
 # `grid` specifies the number of grid points in the data
-function FourierLayer(in::Integer, out::Integer, grid::Integer, modes = 12,
+function FourierLayer(in::Integer, out::Integer, grid::Tuple, modes::Tuple,
                         σ = identity; initf = cglorot_uniform, initl = Flux.glorot_uniform,
                         bias_fourier=true, bias_linear=true)
 
-    # Initialize Fourier weight matrix (only with relevant modes)
-    Wf = initf(in, out, modes)
+    # Number of grid dims and modes must match
+    @assert length(modes) == length(grid) "Number of grid dimensions and number of Fourier modes do not match."
     # Make sure filtering works
-    @assert modes <= floor(Int, grid/2 + 1) "Specified modes exceed allowed maximum. 
+    @assert modes <=  floor.(Int, grid./2 .+ 1) "Specified modes exceed allowed maximum.
     The number of modes to filter must be smaller than N/2 + 1"
-    # Pad the fourier weight matrix with additional zeros
-    Wf = pad_zeros(Wf, (0, floor(Int, grid/2 + 1) - modes), dims=3)
+
+    # Initialize Fourier weight tensor (only with relevant modes)
+    Wf = initf(in, out, modes...)
+
+    # Pad the fourier weight tensor with additional zeros up to n/2+1
+    # padding tuple must be (0,numZeros1,0,numZeros2,...,0,numZerosN)
+    # in and out dims are untouched, hence the two first ordered pairs of the tuple
+    # are zero
+    Wf = begin
+        g = zeros(Int,4+2*length(modes))
+        pad = floor.(Int, grid./2 .+ 1) .- modes
+        for i ∈ eachindex(pad)
+            g[4+2*i] = pad[i]
+        end
+        pad_zeros(Wf, tuple(g...))
+    end
 
     # Initialize Linear weight matrix
     Wl = initl(out, in)
