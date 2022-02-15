@@ -17,5 +17,6 @@ include("DeepONet.jl")
 include("ComplexWeights.jl")
 include("batched.jl")
 include("subnets.jl")
+include("trainable.jl")
 
 end # module

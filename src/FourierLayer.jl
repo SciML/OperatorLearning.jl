@@ -51,7 +51,7 @@ struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},N,Tr<:AbstractFloat,Bf,Bl}
         λ::Tuple = (12), bf = true, bl = true) where
         {F,Tc<:Complex{<:AbstractFloat},N,Tr<:AbstractFloat}
 
-        # create the biases with one singleton dimension
+        # create the biases with one singleton dimension for broadcasting
         bf = Flux.create_bias(Wf, bf, 1, size(Wf,2), Int.(grid ./ 2 .+ 1)...)
         bl = Flux.create_bias(Wl, bl, 1, size(Wl,1), grid...)
         new{F,Tc,N,Tr,typeof(bf),typeof(bl)}(Wf, Wl, grid, σ, λ, bf, bl)
@@ -102,12 +102,17 @@ function FourierLayer(in::Integer, out::Integer, grid::Tuple, modes::Tuple,
 end
 
 # Only train the weight array with non-zero modes
-Flux.@functor FourierLayer 
-Flux.trainable(a::FourierLayer) = (a.Wf[:,:,1:a.λ], a.Wl, 
-                                typeof(a.bf) != Flux.Zeros ? a.bf[:,:,1:a.λ] : nothing,
-                                typeof(a.bl) != Flux.Zeros ? a.bl : nothing)
+Flux.@functor FourierLayer
+# The amount of grid dimensions is variable
+function Flux.trainable(a::FourierLayer)
+    (a.Wf[:,:,train_modes(a.λ)...],
+    a.Wl,
+    typeof(a.bf) != Flux.Zeros ? a.bf[:,:,train_modes(a.λ)...] : nothing,
+    typeof(a.bl) != Flux.Zeros ? a.bl : nothing)
+end
 
 # The actual layer that does stuff
+# Do this with a generated function to compose the Einsum contractions accordingly
 function (a::FourierLayer)(x::AbstractArray)
     # Assign the parameters
     Wf, Wl, bf, bl, σ, = a.Wf, a.Wl, a.bf, a.bl, NNlib.fast_act(a.σ, x)
@@ -139,10 +144,9 @@ end
 
 # Print nicely
 function Base.show(io::IO, l::FourierLayer)
-    print(io, "FourierLayer with\nConvolution path: (", size(l.Wf, 2), ", ",
-            size(l.Wf, 1), ", ", size(l.Wf, 3))
+    print(io, "FourierLayer with\nConvolution path: (", size(l.Wf))
     print(io, ")\n")
-    print(io, "Linear path: (", size(l.Wl, 2), ", ", size(l.Wl, 1))
+    print(io, "Linear path: (", size(l.Wl))
     print(io, ")\n")
     print(io, "Fourier modes: ", l.λ)
     print(io, "\n")
