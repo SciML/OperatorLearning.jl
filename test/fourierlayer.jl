@@ -11,10 +11,10 @@ using Test, Random, Flux
         end
         @testset "3D" begin
             # Test the proper construction
-            @test size(FourierLayer(128, 64, (100,150,200), (20,30,40)).Wf) == (128, 64, 100, 150, 200)
-            @test size(FourierLayer(128, 64, (100,150,200), (20,30,40)).Wl) == (64, 128)
-            @test size(FourierLayer(128, 64, (100,150,200), (20,30,40)).bf) == (1, 64, 100, 150, 200)
-            @test size(FourierLayer(128, 64, (100,150,200), (20,30,40)).bl) == (1, 64, 100, 150, 200)
+            @test size(FourierLayer(128, 64, (10,15,20), (2,3,4)).Wf) == (128, 64, 10, 15, 20)
+            @test size(FourierLayer(128, 64, (10,15,20), (2,3,4)).Wl) == (64, 128)
+            @test size(FourierLayer(128, 64, (10,15,20), (2,3,4)).bf) == (1, 64, 10, 15, 20)
+            @test size(FourierLayer(128, 64, (10,15,20), (2,3,4)).bl) == (1, 64, 10, 15, 20)
         end
     end
 
