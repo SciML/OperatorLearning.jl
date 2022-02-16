@@ -9,6 +9,7 @@ using Random
 using Random: AbstractRNG
 using Flux: nfan, glorot_uniform, batch
 using OMEinsum
+using NNlib: fast_act
 
 export FourierLayer, DeepONet
 
