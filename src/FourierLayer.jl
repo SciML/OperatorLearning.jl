@@ -37,8 +37,8 @@ model = FourierLayer(128, 128, 100, 16, σ)
 """
 struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},N,Tr<:AbstractFloat,Bf,Bl}
     # F: Activation, Tc/Tr: Complex/Real eltype
-    Wf::AbstractArray{Tc,N}
-    Wl::AbstractMatrix{Tr}
+    Wf::Array{Tc,N}
+    Wl::Array{Tr,2}
     grid::Tuple
     σ::F
     λ::Tuple
@@ -46,14 +46,14 @@ struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},N,Tr<:AbstractFloat,Bf,Bl}
     bl::Bl
     # Constructor for the entire fourier layer
     function FourierLayer(
-        Wf::AbstractArray{Tc,N}, Wl::AbstractMatrix{Tr},
+        Wf::Array{Tc,N}, Wl::Array{Tr,2},
         grid::Tuple,σ::F = identity,
         λ::Tuple = (12), bf = true, bl = true) where
         {F,Tc<:Complex{<:AbstractFloat},N,Tr<:AbstractFloat}
 
         # create the biases with one singleton dimension for broadcasting
-        bf = Flux.create_bias(Wf, bf, 1, size(Wf,2), grid...)
-        bl = Flux.create_bias(Wl, bl, 1, size(Wl,1), grid...)
+        bf = Flux.create_bias(Wf, bf, size(Wf,2), grid..., 1)
+        bl = Flux.create_bias(Wl, bl, size(Wl,1), grid..., 1)
         new{F,Tc,N,Tr,typeof(bf),typeof(bl)}(Wf, Wl, grid, σ, λ, bf, bl)
     end
 end
@@ -124,10 +124,10 @@ this is implemented as a generated function =#
 @generated function (a::FourierLayer)(x::AbstractArray{T,N}) where {T,N}
     #= Assign the parameters =#
     params = quote
-        Wᵩ = a.Wf
-        Wₗ  = a.Wl
-        bᵩ = a.bf
-        bₗ  = a.bl
+        Wf = a.Wf
+        Wl  = a.Wl
+        bf = a.bf
+        bl  = a.bl
         σ  = fast_act(a.σ, x)
     end
 
@@ -136,17 +136,15 @@ this is implemented as a generated function =#
     for the rest, it's more convenient to have it in the first one
     For this we need to generate the permutation tuple first
     experm evaluates to a tuple (N,1,2,...,N-1) =#
-    experm = :(tuple(N,$:([k for k = 1:N-1]...)))
-    permute = :(xₚ = permutedims(x, $experm))
 
     #= The linear path
     x -> Wl
     As an argument to the einsum macro we need a list of named grid dimensions
     grids evaluates to a tuple of names of schema (grid_1, grid_2, ..., grid_N) =#
     grids = [Symbol("grid_$(i)") for i ∈ 1:N-2]
-    linear_mul = :(@ein 𝔏[batch, out, $(grids...)] := 
-        Wₗ[out, in] * xₚ[batch, in, $(grids...)])
-    linear_bias = :(𝔏 .+ bₗ)
+    linear_mul = :(@ein 𝔏[out, $(grids...), batch] := 
+        Wl[out, in] * x[in, $(grids...), batch])
+    linear_bias = :(𝔏 .+= bl)
 
     #= The convolution path
     x -> 𝔉 -> Wf -> i𝔉
@@ -156,9 +154,9 @@ this is implemented as a generated function =#
     fourier_dims evaluates to a tuple of Ints with range 3:N since the grid dims
     are sequential up to the last dim of the input =#
     fourier_dims = :([n for n ∈ 3:N])
-    fourier_mul = :(@ein 𝔉[batch, out, $(grids...)] := 
-        Wᵩ[in, out, $(grids...)] * fft(xₚ, $(fourier_dims))[batch, in, $(grids...)])
-    fourier_bias = :(𝔉 .+ bᵩ)
+    fourier_mul = :(@ein 𝔉[out, $(grids...), batch] := 
+        Wf[in, out, $(grids...)] * fft(x, $(fourier_dims))[in, $(grids...), batch])
+    fourier_bias = :(𝔉 .+= bf)
 
     #= Do the inverse transform
     We need to permute back to match the shape of the linear path =#
@@ -166,18 +164,16 @@ this is implemented as a generated function =#
 
     #= Undo the initial permutation
     experm_inv evaluates to a tuple (2,3,...,N,1) =#
-    experm_inv = :(tuple($:([k for k = 2:N]...),1))
 
     return Expr(
         :block,
         params,
-        permute,
         linear_mul,
         linear_bias,
         fourier_mul,
         fourier_bias,
         fourier_inv,
-        :(return permutedims(σ.(𝔏 + real(i𝔉)), $experm_inv))
+        :(return σ.(𝔏 + real(i𝔉)))
     )
 end
 
