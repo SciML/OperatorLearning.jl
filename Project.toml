@@ -10,13 +10,13 @@ Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
 OMEinsum = "ebe7aa44-baf0-506c-a96f-8464559b3922"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+TensorCore = "62fd8b95-f654-4bbd-a8a5-9c27f68ccd50"
 
 [compat]
 CUDA = "3"
 FFTW = "1"
 Flux = "0.12"
 NNlib = "0.8"
-OMEinsum = "0.6"
 julia = "1.6"
 
 [extras]

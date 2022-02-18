@@ -35,10 +35,10 @@ So we would have:
 model = FourierLayer(128, 128, 100, 16, σ)
 ```
 """
-struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},N,Tr<:AbstractFloat,Bf,Bl}
+struct FourierLayer{F,wf,wl,Bf,Bl}
     # F: Activation, Tc/Tr: Complex/Real eltype
-    Wf::Array{Tc,N}
-    Wl::Array{Tr,2}
+    Wf::wf
+    Wl::wl
     grid::Tuple
     σ::F
     λ::Tuple
@@ -46,15 +46,15 @@ struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},N,Tr<:AbstractFloat,Bf,Bl}
     bl::Bl
     # Constructor for the entire fourier layer
     function FourierLayer(
-        Wf::Array{Tc,N}, Wl::Array{Tr,2},
+        Wf::wf, Wl::wl,
         grid::Tuple,σ::F = identity,
         λ::Tuple = (12), bf = true, bl = true) where
-        {F,Tc<:Complex{<:AbstractFloat},N,Tr<:AbstractFloat}
+        {F,wf,wl}
 
         # create the biases with one singleton dimension for broadcasting
         bf = Flux.create_bias(Wf, bf, size(Wf,2), grid..., 1)
         bl = Flux.create_bias(Wl, bl, size(Wl,1), grid..., 1)
-        new{F,Tc,N,Tr,typeof(bf),typeof(bl)}(Wf, Wl, grid, σ, λ, bf, bl)
+        new{F,wf,wl,typeof(bf),typeof(bl)}(Wf, Wl, grid, σ, λ, bf, bl)
     end
 end
 
@@ -131,20 +131,12 @@ this is implemented as a generated function =#
         σ  = fast_act(a.σ, x)
     end
 
-    #= Do a permutation
-    DataLoader requires batch to be the last dim
-    for the rest, it's more convenient to have it in the first one
-    For this we need to generate the permutation tuple first
-    experm evaluates to a tuple (N,1,2,...,N-1) =#
-
     #= The linear path
     x -> Wl
     As an argument to the einsum macro we need a list of named grid dimensions
     grids evaluates to a tuple of names of schema (grid_1, grid_2, ..., grid_N) =#
     grids = [Symbol("grid_$(i)") for i ∈ 1:N-2]
-    linear_mul = :(@ein 𝔏[out, $(grids...), batch] := 
-        Wl[out, in] * x[in, $(grids...), batch])
-    linear_bias = :(𝔏 .+= bl)
+    linear_mul = :(𝔏 = Wl ⊡ x .+ bl)
 
     #= The convolution path
     x -> 𝔉 -> Wf -> i𝔉
@@ -162,18 +154,14 @@ this is implemented as a generated function =#
     We need to permute back to match the shape of the linear path =#
     fourier_inv = :(i𝔉 = ifft(𝔉, $(fourier_dims)))
 
-    #= Undo the initial permutation
-    experm_inv evaluates to a tuple (2,3,...,N,1) =#
-
     return Expr(
         :block,
         params,
         linear_mul,
-        linear_bias,
         fourier_mul,
-        fourier_bias,
+        #fourier_bias,
         fourier_inv,
-        :(return σ.(𝔏 + real(i𝔉)))
+        :(return σ.(𝔏 + real.(i𝔉)))
     )
 end
 
