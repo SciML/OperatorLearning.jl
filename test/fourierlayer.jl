@@ -13,13 +13,13 @@ using Test, Random, Flux
     # We only use a subset of the weight tensors for training
     @testset "parameters" begin
         # Wf
-        @test size(params(FourierLayer(128, 64, 100, 20))[1]) == (128, 64, 20)
+        @test size(Flux.params(FourierLayer(128, 64, 100, 20))[1]) == (128, 64, 20)
         # Wl
-        @test size(params(FourierLayer(128, 64, 100, 20))[2]) == (64, 128)
+        @test size(Flux.params(FourierLayer(128, 64, 100, 20))[2]) == (64, 128)
         # bf
-        @test size(params(FourierLayer(128, 64, 100, 20))[3]) == (1, 64, 20)
+        @test size(Flux.params(FourierLayer(128, 64, 100, 20))[3]) == (1, 64, 20)
         # bl
-        @test size(params(FourierLayer(128, 64, 100, 20))[4]) == (1, 64, 100)
+        @test size(Flux.params(FourierLayer(128, 64, 100, 20))[4]) == (1, 64, 100)
     end
 
     # Accept only Int as architecture parameters
