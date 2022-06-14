@@ -90,10 +90,6 @@ end
 # Only train the weight array with non-zero modes
 Flux.@functor FourierLayer
 
-# Flux.trainable(a::FourierLayer) = (a.Wf[:,:,1:a.λ], a.Wl,
-#                                 typeof(a.bf) != Flux.Zeros ? a.bf[:,:,1:a.λ] : nothing,
-#                                 typeof(a.bl) != Flux.Zeros ? a.bl : nothing)
-
 function Flux.trainable(a::FourierLayer)
     trainable_params = []
     push!(trainable_params,a.Wf[:,:,1:a.λ])
