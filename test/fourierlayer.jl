@@ -22,6 +22,18 @@ using Test, Random, Flux
         @test size(Flux.params(FourierLayer(128, 64, 100, 20))[4]) == (1, 64, 100)
     end
 
+    # Bias tests
+    @testset "parameters - bias" begin
+        layer = FourierLayer(128,128,1024,16,gelu,bias_fourier=true,bias_linear=true)
+        @test length(Flux.trainable(layer)) == 4
+        layer = FourierLayer(128,128,1024,16,gelu,bias_fourier=true,bias_linear=false)
+        @test length(Flux.trainable(layer)) == 3
+        layer = FourierLayer(128,128,1024,16,gelu,bias_fourier=false,bias_linear=true)
+        @test length(Flux.trainable(layer)) == 3
+        layer = FourierLayer(128,128,1024,16,gelu,bias_fourier=false,bias_linear=false)
+        @test length(Flux.trainable(layer)) == 2
+    end
+
     # Accept only Int as architecture parameters
     @test_throws MethodError FourierLayer(128.5, 64, 100, 20)
     @test_throws MethodError FourierLayer(128.5, 64, 100, 20, tanh)
