@@ -46,7 +46,7 @@ struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat,Bf,Bl}
     bl::Bl
     # Constructor for the entire fourier layer
     function FourierLayer(
-        Wf::AbstractArray{Tc,3}, Wl::AbstractMatrix{Tr}, 
+        Wf::AbstractArray{Tc,3}, Wl::AbstractMatrix{Tr},
         grid::Int, σ::F = identity,
         λ::Int = 12, bf = true, bl = true) where
         {F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
@@ -69,7 +69,7 @@ function FourierLayer(in::Integer, out::Integer, grid::Integer, modes = 12,
     # Initialize Fourier weight matrix (only with relevant modes)
     Wf = initf(in, out, modes)
     # Make sure filtering works
-    @assert modes <= floor(Int, grid/2 + 1) "Specified modes exceed allowed maximum. 
+    @assert modes <= floor(Int, grid/2 + 1) "Specified modes exceed allowed maximum.
     The number of modes to filter must be smaller than N/2 + 1"
     # Pad the fourier weight matrix with additional zeros
     Wf = pad_zeros(Wf, (0, floor(Int, grid/2 + 1) - modes), dims=3)
@@ -88,10 +88,24 @@ function FourierLayer(in::Integer, out::Integer, grid::Integer, modes = 12,
 end
 
 # Only train the weight array with non-zero modes
-Flux.@functor FourierLayer 
-Flux.trainable(a::FourierLayer) = (a.Wf[:,:,1:a.λ], a.Wl, 
-                                typeof(a.bf) != Flux.Zeros ? a.bf[:,:,1:a.λ] : nothing,
-                                typeof(a.bl) != Flux.Zeros ? a.bl : nothing)
+Flux.@functor FourierLayer
+
+# Flux.trainable(a::FourierLayer) = (a.Wf[:,:,1:a.λ], a.Wl,
+#                                 typeof(a.bf) != Flux.Zeros ? a.bf[:,:,1:a.λ] : nothing,
+#                                 typeof(a.bl) != Flux.Zeros ? a.bl : nothing)
+
+function Flux.trainable(a::FourierLayer)
+    trainable_params = []
+    push!(trainable_params,a.Wf[:,:,1:a.λ])
+    push!(trainable_params,a.Wl)
+    if a.bf!=false
+        push!(trainable_params,typeof(a.bf) != Flux.Zeros ? a.bf[:,:,1:a.λ] : nothing)
+    end
+    if a.bl!=false
+        push!(trainable_params,typeof(a.bl) != Flux.Zeros ? a.bl : nothing)
+    end
+    return trainable_params
+end
 
 # The actual layer that does stuff
 function (a::FourierLayer)(x::AbstractArray)
