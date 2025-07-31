@@ -35,9 +35,9 @@ So we would have:
 model = FourierLayer(128, 128, 100, 16, σ)
 ```
 """
-struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat,Bf,Bl}
+struct FourierLayer{F, Tc <: Complex{<:AbstractFloat}, Tr <: AbstractFloat, Bf, Bl}
     # F: Activation, Tc/Tr: Complex/Real eltype
-    Wf::AbstractArray{Tc,3}
+    Wf::AbstractArray{Tc, 3}
     Wl::AbstractMatrix{Tr}
     grid::Int
     σ::F
@@ -46,15 +46,16 @@ struct FourierLayer{F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat,Bf,Bl}
     bl::Bl
     # Constructor for the entire fourier layer
     function FourierLayer(
-        Wf::AbstractArray{Tc,3}, Wl::AbstractMatrix{Tr}, 
-        grid::Int, σ::F = identity,
-        λ::Int = 12, bf = true, bl = true) where
-        {F,Tc<:Complex{<:AbstractFloat},Tr<:AbstractFloat}
+            Wf::AbstractArray{Tc, 3}, Wl::AbstractMatrix{Tr},
+            grid::Int, σ::F = identity,
+            λ::Int = 12, bf = true,
+            bl = true) where
+            {F, Tc <: Complex{<:AbstractFloat}, Tr <: AbstractFloat}
 
         # create the biases with one singleton dimension
-        bf = Flux.create_bias(Wf, bf, 1, size(Wf,2), size(Wf,3))
-        bl = Flux.create_bias(Wl, bl, 1, size(Wl,1), grid)
-        new{F,Tc,Tr,typeof(bf),typeof(bl)}(Wf, Wl, grid, σ, λ, bf, bl)
+        bf = Flux.create_bias(Wf, bf, 1, size(Wf, 2), size(Wf, 3))
+        bl = Flux.create_bias(Wl, bl, 1, size(Wl, 1), grid)
+        new{F, Tc, Tr, typeof(bf), typeof(bl)}(Wf, Wl, grid, σ, λ, bf, bl)
     end
 end
 
@@ -63,8 +64,8 @@ end
 # `modes` specifies the number of modes not to be filtered out
 # `grid` specifies the number of grid points in the data
 function FourierLayer(in::Integer, out::Integer, grid::Integer, modes = 12,
-                        σ = identity; initf = cglorot_uniform, initl = Flux.glorot_uniform,
-                        bias_fourier=true, bias_linear=true)
+        σ = identity; initf = cglorot_uniform, initl = Flux.glorot_uniform,
+        bias_fourier = true, bias_linear = true)
 
     # Initialize Fourier weight matrix (only with relevant modes)
     Wf = initf(in, out, modes)
@@ -72,7 +73,7 @@ function FourierLayer(in::Integer, out::Integer, grid::Integer, modes = 12,
     @assert modes <= floor(Int, grid/2 + 1) "Specified modes exceed allowed maximum. 
     The number of modes to filter must be smaller than N/2 + 1"
     # Pad the fourier weight matrix with additional zeros
-    Wf = pad_zeros(Wf, (0, floor(Int, grid/2 + 1) - modes), dims=3)
+    Wf = pad_zeros(Wf, (0, floor(Int, grid/2 + 1) - modes), dims = 3)
 
     # Initialize Linear weight matrix
     Wl = initl(out, in)
@@ -88,10 +89,12 @@ function FourierLayer(in::Integer, out::Integer, grid::Integer, modes = 12,
 end
 
 # Only train the weight array with non-zero modes
-Flux.@functor FourierLayer 
-Flux.trainable(a::FourierLayer) = (a.Wf[:,:,1:a.λ], a.Wl, 
-                                typeof(a.bf) != Flux.Zeros ? a.bf[:,:,1:a.λ] : nothing,
-                                typeof(a.bl) != Flux.Zeros ? a.bl : nothing)
+Flux.@functor FourierLayer
+function Flux.trainable(a::FourierLayer)
+    (a.Wf[:, :, 1:a.λ], a.Wl,
+        typeof(a.bf) != Flux.Zeros ? a.bf[:, :, 1:a.λ] : nothing,
+        typeof(a.bl) != Flux.Zeros ? a.bl : nothing)
+end
 
 # The actual layer that does stuff
 function (a::FourierLayer)(x::AbstractArray)
@@ -100,7 +103,7 @@ function (a::FourierLayer)(x::AbstractArray)
 
     # Do a permutation: DataLoader requires batch to be the last dim
     # for the rest, it's more convenient to have it in the first one
-    xp = permutedims(x, [3,1,2])
+    xp = permutedims(x, [3, 1, 2])
 
     # The linear path
     # x -> Wl
@@ -117,16 +120,16 @@ function (a::FourierLayer)(x::AbstractArray)
 
     # Do the inverse transform
     # We need to permute back to match the shape of the linear path
-    i𝔉 = irfft(𝔉, size(xp,3),3)
+    i𝔉 = irfft(𝔉, size(xp, 3), 3)
 
     # Return the activated sum
-    return permutedims(σ.(linear + i𝔉), [2,3,1])
+    return permutedims(σ.(linear + i𝔉), [2, 3, 1])
 end
 
 # Print nicely
 function Base.show(io::IO, l::FourierLayer)
     print(io, "FourierLayer with\nConvolution path: (", size(l.Wf, 2), ", ",
-            size(l.Wf, 1), ", ", size(l.Wf, 3))
+        size(l.Wf, 1), ", ", size(l.Wf, 3))
     print(io, ")\n")
     print(io, "Linear path: (", size(l.Wl, 2), ", ", size(l.Wl, 1))
     print(io, ")\n")
