@@ -21,22 +21,22 @@ subsample = 2^3;
 # create the x training array, according to our desired grid size
 xtrain = vars["a"][1:1000, 1:subsample:end]' |> device;
 # create the x test array
-xtest = vars["a"][end-99:end, 1:subsample:end]' |> device;
+xtest = vars["a"][(end - 99):end, 1:subsample:end]' |> device;
 
 # Create the y training array
 ytrain = vars["u"][1:1000, 1:subsample:end] |> device;
 # Create the y test array
-ytest = vars["u"][end-99:end, 1:subsample:end] |> device;
+ytest = vars["u"][(end - 99):end, 1:subsample:end] |> device;
 
 # The data is missing grid data, so we create it
 # `collect` converts data type `range` into an array
-grid = collect(range(0, 1, length=1024))' |> device
+grid = collect(range(0, 1, length = 1024))' |> device
 
 # Create the DeepONet:
 # IC is given on grid of 1024 points, and we solve for a fixed time t in one
 # spatial dimension x, making the branch input of size 1024 and trunk size 1
 # We choose GeLU activation for both subnets
-model = DeepONet((1024,1024,1024),(1,1024,1024),gelu,gelu) |> device
+model = DeepONet((1024, 1024, 1024), (1, 1024, 1024), gelu, gelu) |> device
 
 # We use the ADAM optimizer for training
 learning_rate = 0.001
@@ -48,12 +48,12 @@ parameters = params(model)
 # The loss function
 # We can't use the "vanilla" implementation of the mse here since we have
 # two distinct inputs to our DeepONet, so we wrap them into a tuple
-loss(xtrain,ytrain,sensor) = Flux.Losses.mse(model(xtrain,sensor),ytrain)
+loss(xtrain, ytrain, sensor) = Flux.Losses.mse(model(xtrain, sensor), ytrain)
 
 # Define a callback function that gives some output during training
-evalcb() = @show(loss(xtest,ytest,grid))
+evalcb() = @show(loss(xtest, ytest, grid))
 # Print the callback only every 5 seconds
 throttled_cb = throttle(evalcb, 5)
 
 # Do the training loop
-Flux.@epochs 500 train!(loss, parameters, [(xtrain,ytrain,grid)], opt, cb = evalcb)
+Flux.@epochs 500 train!(loss, parameters, [(xtrain, ytrain, grid)], opt, cb = evalcb)
