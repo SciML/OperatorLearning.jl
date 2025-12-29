@@ -97,4 +97,5 @@ Contributions are always welcome! Please submit a PR if you'd like to participat
 
 [1] Z. Li et al., „Fourier Neural Operator for Parametric Partial Differential Equations“, [arXiv:2010.08895](https://arxiv.org/abs/2010.08895) [cs, math], May 2021
 
-[2] L. Lu, P. Jin, and G. E. Karniadakis, „DeepONet: Learning nonlinear operators for identifying differential equations based on the universal approximation theorem of operators“, [arXiv:1910.03193](http://arxiv.org/abs/1910.03193) [cs, stat], Apr. 2020
+[2] L. Lu, P. Jin, and G. E. Karniadakis, „DeepONet: Learning nonlinear operators for identifying differential equations based on the universal approximation theorem of operators", [arXiv:1910.03193](http://arxiv.org/abs/1910.03193) [cs, stat], Apr. 2020
+
